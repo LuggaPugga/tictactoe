@@ -22,7 +22,15 @@ export const metadata: Metadata = {
     "A modern TicTacToe game with online multiplayer and local play. Challenge friends in this strategic classic game.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://tictactoe.example.com"),
   authors: [{ name: "LuggaPugga" }],
-  keywords: ["tictactoe", "ultimate tictactoe", "game", "multiplayer", "online game", "strategy game", "board game"],
+  keywords: [
+    "tictactoe",
+    "ultimate tictactoe",
+    "game",
+    "multiplayer",
+    "online game",
+    "strategy game",
+    "board game",
+  ],
   creator: "LuggaPugga",
   publisher: "LuggaPugga",
   robots: {
