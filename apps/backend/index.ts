@@ -51,7 +51,7 @@ function checkWinner(board: (string | null)[]): string | null {
     [2, 5, 8],
     [0, 4, 8],
     [2, 4, 6],
-  ]
+  ] as const
 
   for (const combo of winningCombos) {
     const [a, b, c] = combo
@@ -452,7 +452,7 @@ io.on("connection", (socket) => {
   })
 })
 
-app.post("/api/create-room", async (req, res) => {
+app.post("/api/create-room", async (_req, res) => {
   try {
     const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase()
     rooms.set(roomCode, createRoom())
@@ -463,5 +463,5 @@ app.post("/api/create-room", async (req, res) => {
   }
 })
 
-const PORT = process.env.PORT || 5000
+const PORT = process.env["PORT"] || 5000
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`))
