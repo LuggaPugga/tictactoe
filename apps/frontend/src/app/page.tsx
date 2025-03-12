@@ -155,10 +155,14 @@ export default function Home() {
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="global" disabled={inQueue}>
+                  <TabsTrigger
+                    value="global"
+                    disabled={inQueue}
+                    data-umami-event="select-global-tab"
+                  >
                     Global
                   </TabsTrigger>
-                  <TabsTrigger value="local" disabled={inQueue}>
+                  <TabsTrigger value="local" disabled={inQueue} data-umami-event="select-local-tab">
                     Local
                   </TabsTrigger>
                 </TabsList>
@@ -185,6 +189,7 @@ export default function Home() {
                           "bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
                         }`}
                         disabled={!playerName || isLoading}
+                        data-umami-event={inQueue ? "leave-queue" : "join-queue"}
                       >
                         {inQueue ? (
                           <>
@@ -204,6 +209,7 @@ export default function Home() {
                         className="w-full h-11 text-base"
                         variant="outline"
                         disabled={!playerName || isLoading || inQueue}
+                        data-umami-event="create-private-room"
                       >
                         <Wifi className="mr-2 h-5 w-5" />
                         Create Private Room
@@ -214,6 +220,7 @@ export default function Home() {
                         className="w-full h-11 text-base"
                         variant="outline"
                         disabled={!playerName || inQueue}
+                        data-umami-event="open-join-room"
                       >
                         <Wifi className="mr-2 h-5 w-5" />
                         Join Private Room
@@ -244,6 +251,7 @@ export default function Home() {
                               className="absolute right-0 top-0 h-11 w-11"
                               onClick={() => setIsJoining(false)}
                               disabled={inQueue}
+                              data-umami-event="close-join-room"
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -252,6 +260,7 @@ export default function Home() {
                             onClick={handleJoinRoom}
                             className="w-full h-11 text-base"
                             disabled={!playerName || !roomCode || inQueue}
+                            data-umami-event="join-private-room"
                           >
                             Join Room
                           </Button>
@@ -278,6 +287,7 @@ export default function Home() {
                         onClick={handleLocalMultiplayer}
                         className="w-full h-11 text-base"
                         disabled={!playerName || inQueue}
+                        data-umami-event="play-local-multiplayer"
                       >
                         <Users className="mr-2 h-5 w-5" />
                         Play with a Friend
@@ -292,6 +302,7 @@ export default function Home() {
                                 className="w-full h-11 text-base pointer-events-none opacity-50"
                                 variant="outline"
                                 aria-disabled="true"
+                                data-umami-event="play-against-ai"
                               >
                                 <Robot className="mr-2 h-5 w-5" />
                                 Play Against AI

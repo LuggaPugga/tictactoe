@@ -258,6 +258,7 @@ export default function LocalMultiplayer() {
             <Button
               type="submit"
               className="w-full bg-[#c1644d] hover:bg-[#b15a44] dark:bg-[#e07a5f] dark:hover:bg-[#d0694e] text-white font-semibold py-3 px-4 rounded-md transition duration-200"
+              data-umami-event="start-local-game"
             >
               Start Game
             </Button>

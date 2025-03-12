@@ -351,8 +351,9 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
           variant="ghost"
           size="icon"
           className="text-white hover:text-red-500 transition-colors hover:bg-transparent"
+          data-umami-event="leave-game"
         >
-          <LogOut className="h-6 w-6" />
+          <LogOut className="size-6" />
         </Button>
       </div>
 

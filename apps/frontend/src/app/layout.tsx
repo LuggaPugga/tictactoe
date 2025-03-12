@@ -3,6 +3,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import React from "react"
 import { GeistSans } from "geist/font/sans"
+import Script from "next/script"
 
 export const metadata: Metadata = {
   title: "TicTacToe - Play anywhere, anytime",
@@ -19,6 +20,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <Script
+        defer
+        src={process.env.NEXT_PUBLIC_UMAMI_URL}
+        data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+      ></Script>
       <body className={`${GeistSans.className} antialiased`}>
         <ThemeProvider
           attribute="class"
