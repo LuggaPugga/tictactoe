@@ -24,6 +24,7 @@ Create a `.env` file in the root of the frontend directory with the following va
 
 ```
 # Required: URL to your backend service
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
 
 # Optional: Analytics (if using Umami)
