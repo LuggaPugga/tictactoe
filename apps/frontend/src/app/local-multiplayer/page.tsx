@@ -215,28 +215,46 @@ export default function LocalMultiplayer() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="rounded-2xl shadow-xl p-8 max-w-md w-full space-y-8 relative z-10"
+          className="rounded-2xl shadow-xl p-8 max-w-md w-full space-y-8 relative z-10 border border-border/40"
         >
-          <h1 className="text-3xl font-bold text-center text-[#c1644d] dark:text-[#e07a5f]">
-            Local Multiplayer
-          </h1>
-          <form onSubmit={handleStartGame} className="space-y-4">
-            <Input
-              type="text"
-              name="player1"
-              placeholder="Player 1 Name"
-              value={player1Name}
-              onChange={(e) => setPlayer1Name(e.target.value)}
-              className="w-full px-4 py-2 text-lg"
-              required
-            />
-            <Input
-              type="text"
-              name="player2"
-              placeholder="Player 2 Name"
-              className="w-full px-4 py-2 text-lg"
-              required
-            />
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold text-[#c1644d] dark:text-[#e07a5f]">
+              Local Multiplayer
+            </h1>
+            <p className="text-muted-foreground">Enter player names to start the game</p>
+          </div>
+
+          <form onSubmit={handleStartGame} className="space-y-6">
+            <div className="space-y-2">
+              <label htmlFor="player1" className="text-sm font-medium">
+                Player 1 (X)
+              </label>
+              <Input
+                id="player1"
+                type="text"
+                name="player1"
+                placeholder="Enter name"
+                value={player1Name}
+                onChange={(e) => setPlayer1Name(e.target.value)}
+                className="w-full rounded-md border-border/60 bg-input px-4 py-2 text-lg transition-colors focus-visible:ring-2 focus-visible:ring-[#e07a5f]/50"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="player2" className="text-sm font-medium">
+                Player 2 (O)
+              </label>
+              <Input
+                id="player2"
+                type="text"
+                name="player2"
+                placeholder="Enter name"
+                className="w-full rounded-md border-border/60 bg-input px-4 py-2 text-lg transition-colors focus-visible:ring-2 focus-visible:ring-[#e07a5f]/50"
+                required
+              />
+            </div>
+
             <Button
               type="submit"
               className="w-full bg-[#c1644d] hover:bg-[#b15a44] dark:bg-[#e07a5f] dark:hover:bg-[#d0694e] text-white font-semibold py-3 px-4 rounded-md transition duration-200"
