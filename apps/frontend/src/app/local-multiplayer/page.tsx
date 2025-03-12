@@ -211,12 +211,7 @@ export default function LocalMultiplayer() {
         <div className="absolute inset-0 bg-grid-slate-300/[0.1] dark:bg-grid-slate-700/[0.1] bg-[size:40px_40px]" />
       </div>
       {!isGameStarted ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="rounded-2xl shadow-xl p-8 max-w-md w-full space-y-8 relative z-10 border border-border/40"
-        >
+        <div className="rounded-2xl shadow-xl p-8 max-w-md w-full space-y-8 relative z-10 border border-border/40">
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-[#c1644d] dark:text-[#e07a5f]">
               Local Multiplayer
@@ -263,7 +258,7 @@ export default function LocalMultiplayer() {
               Start Game
             </Button>
           </form>
-        </motion.div>
+        </div>
       ) : (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
