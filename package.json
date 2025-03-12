@@ -1,5 +1,5 @@
 {
-  "name": "with-npm",
+  "name": "tictactoe",
   "private": true,
   "scripts": {
     "start": "turbo run start",
