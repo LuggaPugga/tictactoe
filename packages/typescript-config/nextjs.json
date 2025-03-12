@@ -3,10 +3,8 @@
   "extends": "./base.json",
   "compilerOptions": {
     "plugins": [{ "name": "next" }],
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "lib": ["DOM", "DOM.Iterable"],
     "jsx": "preserve",
-    "noEmit": true
+    "moduleResolution": "bundler"
   }
 }
