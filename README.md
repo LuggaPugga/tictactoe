@@ -1,84 +1,79 @@
-# Turborepo starter
+# Ultimate Tic Tac Toe
 
-This is a community-maintained example. If you experience a problem, please submit a pull request with a fix. GitHub Issues will be closed.
+This is a Turborepo project containing a real-time multiplayer Ultimate Tic Tac Toe game.
 
-## Using this example
+## Demo
 
-Run the following command:
+Live demo available at: [ttt.luggapugga.dev](https://ttt.luggapugga.dev)
 
-```sh
-npx create-turbo@latest -e with-npm
-```
+## What's in the Project
 
-## What's inside?
+The project contains:
 
-This Turborepo uses [npm](https://www.npmjs.com/) as a packages manager. It includes the following packages/apps:
+- **Applications**:
 
-### Apps and Packages
+  - `frontend`: Next.js application with the game UI
+  - `backend`: Socket.IO/Express server for real-time gameplay
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- **Shared Packages**:
+  - `@repo/eslint-config`: Shared ESLint configurations
+  - `@repo/typescript-config`: Shared TypeScript configurations
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+## Features
 
-### Utilities
+- Real-time multiplayer gameplay
+- Online matchmaking system
+- Custom room creation with shareable codes
+- Responsive design with dark/light mode
+- Modern UI with animations
 
-This Turborepo has some additional tools already setup for you:
+## Getting Started
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+To start working with this project:
 
-### Build
+1. **Clone the repository**:
 
-To build all apps and packages, run the following command:
+   ```sh
+   git clone https://github.com/luggapugga/tictactoe.git
+   cd tictactoe
+   ```
 
-```
-cd my-turborepo
-npm run build
-```
+2. **Install dependencies**:
 
-### Develop
+   ```sh
+   npm install
+   # or
+   bun install
+   ```
 
-To develop all apps and packages, run the following command:
+3. **Set up environment variables**:
 
-```
-cd my-turborepo
-npm run dev
-```
+   ```sh
+   # For the frontend
+   cp apps/frontend/.env.example apps/frontend/.env
+   ```
 
-### Remote Caching
+4. **Run the development servers**:
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+   ```sh
+   npm run dev
+   # or
+   bun run dev
+   ```
 
-Turborepo can use a technique known as [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+5. **Build everything**:
+   ```sh
+   npm run build
+   # or
+   bun run build
+   ```
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+## Tech Stack
 
-```
-cd my-turborepo
-npx turbo login
-```
+- **Frontend**: Next.js, Socket.IO Client, Tailwind CSS, ShadcnUI
+- **Backend**: Express, Socket.IO, TypeScript, Bun
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+For more detailed information about each application, please see the README files in their respective directories:
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-npx turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/repo/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+- [Frontend README](apps/frontend/README.md)
+- [Backend README](apps/backend/README.md)
