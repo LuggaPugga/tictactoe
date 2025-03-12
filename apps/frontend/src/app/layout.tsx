@@ -21,10 +21,10 @@ export const metadata: Metadata = {
   description:
     "A modern TicTacToe game with online multiplayer and local play. Challenge friends in this strategic classic game.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://tictactoe.example.com"),
-  authors: [{ name: "TicTacToe Team" }],
-  keywords: ["tictactoe", "game", "multiplayer", "online game", "strategy game", "board game"],
-  creator: "TicTacToe Team",
-  publisher: "TicTacToe",
+  authors: [{ name: "LuggaPugga" }],
+  keywords: ["tictactoe", "ultimate tictactoe", "game", "multiplayer", "online game", "strategy game", "board game"],
+  creator: "LuggaPugga",
+  publisher: "LuggaPugga",
   robots: {
     index: true,
     follow: true,
@@ -40,13 +40,13 @@ export const metadata: Metadata = {
     url: "/",
     title: "Ultimate TicTacToe - Play anywhere, anytime",
     description: "A modern TicTacToe game with online multiplayer, local play, and more",
-    siteName: "TicTacToe",
+    siteName: "Ultimate TicTacToe",
     images: [
       {
         url: "/api/og/general",
         width: 1200,
         height: 630,
-        alt: "TicTacToe Game Preview",
+        alt: "Ultimate TicTacToe Game Preview",
       },
     ],
   },
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     title: "Ultimate TicTacToe - Play anywhere, anytime",
     description: "A modern TicTacToe game with online multiplayer, local play, and more",
     images: ["/api/og/general"],
-    creator: "@tictactoe",
+    creator: "@LuggaPugga",
   },
   alternates: {
     canonical: "/",
