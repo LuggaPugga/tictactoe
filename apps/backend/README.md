@@ -1,6 +1,6 @@
 # Ultimate Tic-Tac-Toe Server
 
-A real-time multiplayer Ultimate Tic-Tac-Toe game server using Socket.IO, Express, and Node.js.
+A real-time multiplayer Ultimate Tic-Tac-Toe game server using Socket.IO, Express, and Bun.
 
 ## Features
 
