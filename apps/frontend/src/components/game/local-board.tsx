@@ -1,10 +1,10 @@
 import React from "react"
 import { motion } from "framer-motion"
 import { X, Circle } from "lucide-react"
-import type { LocalBoard, CellValue } from "@/lib/types"
+import type { LocalBoard as LocalBoardType, CellValue } from "@/lib/types"
 
 interface LocalBoardProps {
-  board: LocalBoard
+  board: LocalBoardType
   boardIndex: number
   onCellClick: (boardIndex: number, cellIndex: number) => void
   isActive: boolean
