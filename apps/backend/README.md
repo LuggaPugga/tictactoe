@@ -1,4 +1,4 @@
-# Ultimate Tic-Tac-Toe Server
+# Tic Tac Toe - Backend
 
 A real-time multiplayer Ultimate Tic-Tac-Toe game server using Socket.IO, Express, and Bun.
 
