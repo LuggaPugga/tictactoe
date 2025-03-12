@@ -5,6 +5,10 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const roomCode = searchParams.get("roomCode") || "ABC123"
 
+  if (roomCode.length !== 6) {
+    return new Response("Room code must be 6 characters long", { status: 400 })
+  }
+
   return new ImageResponse(
     (
       <div
