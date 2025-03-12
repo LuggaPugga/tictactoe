@@ -20,11 +20,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <Script
-        defer
-        src={process.env.NEXT_PUBLIC_UMAMI_URL}
-        data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
-      ></Script>
+      {process.env.NEXT_PUBLIC_UMAMI_URL && process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
+        <Script
+          defer
+          src={process.env.NEXT_PUBLIC_UMAMI_URL}
+          data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+        ></Script>
+      )}
       <body className={`${GeistSans.className} antialiased`}>
         <ThemeProvider
           attribute="class"
