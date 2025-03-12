@@ -275,17 +275,29 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="rounded-2xl shadow-xl p-8 max-w-md w-full space-y-8 relative z-10"
+          className="rounded-2xl shadow-xl p-8 max-w-md w-full space-y-8 relative z-10 border border-border/40"
         >
-          <form onSubmit={handleNameSubmit} className="space-y-4">
-            <Input
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Enter your name"
-              className="w-full px-4 py-2 text-lg"
-              required
-            />
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold text-[#c1644d] dark:text-[#e07a5f]">Join Game</h1>
+            <p className="text-muted-foreground">Enter your name to join the game</p>
+          </div>
+
+          <form onSubmit={handleNameSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label htmlFor="playerName" className="text-sm font-medium">
+                Your Name
+              </label>
+              <Input
+                id="playerName"
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="Enter name"
+                className="w-full rounded-md border-border/60 bg-input px-4 py-2 text-lg transition-colors focus-visible:ring-2 focus-visible:ring-[#e07a5f]/50"
+                required
+              />
+            </div>
+
             <Button
               type="submit"
               className="w-full bg-[#c1644d] hover:bg-[#b15a44] dark:bg-[#e07a5f] dark:hover:bg-[#d0694e] text-white font-semibold py-3 px-4 rounded-md transition duration-200"
