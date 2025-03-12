@@ -104,7 +104,7 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
         setScores(scores)
         setRoomStatus(status)
         setIsLoading(false)
-      }
+      },
     )
 
     newSocket.on(
@@ -119,22 +119,22 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
           setWinner(winner)
           setGameStatus("over")
         }
-      }
+      },
     )
 
     newSocket.on("playerDisconnected", (disconnectedSessionCode) => {
       setPlayers((prevPlayers) =>
         prevPlayers.map((player) =>
-          player.sessionCode === disconnectedSessionCode ? { ...player, connected: false } : player
-        )
+          player.sessionCode === disconnectedSessionCode ? { ...player, connected: false } : player,
+        ),
       )
     })
 
     newSocket.on("playerReconnected", (reconnectedSessionCode) => {
       setPlayers((prevPlayers) =>
         prevPlayers.map((player) =>
-          player.sessionCode === reconnectedSessionCode ? { ...player, connected: true } : player
-        )
+          player.sessionCode === reconnectedSessionCode ? { ...player, connected: true } : player,
+        ),
       )
     })
 
@@ -171,7 +171,7 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
         setRoomStatus(status)
         setSpectators(spectators)
         setIsLoading(false)
-      }
+      },
     )
 
     newSocket.on("roomNotFound", () => {
@@ -189,7 +189,7 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
         setGameStatus("playing")
         setWinner(winner)
         setScores(scores)
-      }
+      },
     )
 
     newSocket.on("joinedAsSpectator", (data) => {
@@ -237,7 +237,7 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
         socket.emit("makeMove", { roomCode, boardIndex, cellIndex, sessionCode })
       }
     },
-    [socket, game, currentTurn, sessionCode, gameStatus, roomCode, isSpectator]
+    [socket, game, currentTurn, sessionCode, gameStatus, roomCode, isSpectator],
   )
 
   const handleLeaveGame = useCallback(() => {
@@ -262,7 +262,7 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
         setIsNameSet(true)
       }
     },
-    [playerName, roomCode]
+    [playerName, roomCode],
   )
 
   if (!isNameSet) {

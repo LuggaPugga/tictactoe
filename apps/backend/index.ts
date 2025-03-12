@@ -34,7 +34,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEve
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
     },
-  }
+  },
 )
 
 const rooms = new Map<string, GameRoom>()
@@ -299,7 +299,7 @@ io.on("connection", (socket) => {
     }
 
     const currentPlayerIndex = room.players.findIndex(
-      (player) => player.sessionCode === sessionCode
+      (player) => player.sessionCode === sessionCode,
     )
     if (currentPlayerIndex === -1 || room.game[boardIndex][cellIndex] !== null) {
       socket.emit("invalidMove")
@@ -390,15 +390,15 @@ io.on("connection", (socket) => {
     }
     for (const [roomCode, room] of rooms.entries()) {
       const disconnectedSessionCode = Array.from(room.sessionToSocket.entries()).find(
-        ([, socketId]) => socketId === socket.id
+        ([, socketId]) => socketId === socket.id,
       )?.[0]
 
       if (disconnectedSessionCode) {
         const disconnectedPlayer = room.players.find(
-          (player) => player.sessionCode === disconnectedSessionCode
+          (player) => player.sessionCode === disconnectedSessionCode,
         )
         const disconnectedSpectator = room.spectators.find(
-          (spectator) => spectator.sessionCode === disconnectedSessionCode
+          (spectator) => spectator.sessionCode === disconnectedSessionCode,
         )
 
         if (disconnectedPlayer) {

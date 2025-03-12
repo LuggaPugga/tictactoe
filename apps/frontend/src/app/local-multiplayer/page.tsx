@@ -113,9 +113,9 @@ export default function LocalMultiplayer() {
         const newGame: Game = game.map((board, i) =>
           i === boardIndex
             ? board.map((cell, j) =>
-                j === cellIndex ? (players[currentPlayerIndex]?.id as CellValue) : cell
+                j === cellIndex ? (players[currentPlayerIndex]?.id as CellValue) : cell,
               )
-            : board
+            : board,
         )
         setGame(newGame)
 
@@ -164,7 +164,7 @@ export default function LocalMultiplayer() {
       }
       saveGameState()
     },
-    [game, globalBoard, currentBoard, players, currentPlayerIndex, scores, saveGameState]
+    [game, globalBoard, currentBoard, players, currentPlayerIndex, scores, saveGameState],
   )
 
   const handlePlayAgain = useCallback(() => {
