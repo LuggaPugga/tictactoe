@@ -3,5 +3,6 @@
   "compilerOptions": {
     "outDir": "dist"
   },
+  "include": ["src", "types.ts", "index.ts"],
   "exclude": ["node_modules"]
 }
