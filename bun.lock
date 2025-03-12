@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "with-npm",
+      "name": "tictactoe",
       "devDependencies": {
         "prettier": "^3.5.3",
         "turbo": "^2.4.4",
