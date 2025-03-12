@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
           padding: "40px",
           backgroundImage:
             "radial-gradient(circle at 25% 25%, hsl(240 15% 8%) 0%, hsl(240 10% 3.9%) 100%)",
-          fontFamily: "Inter, sans-serif",
           position: "relative",
           overflow: "hidden",
         }}
