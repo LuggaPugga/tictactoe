@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
           Ultimate TicTacToe
         </div>
         <div style={{ fontSize: 36, color: "hsl(0 0% 80%)", marginBottom: "40px" }}>
-          You got a invite to join a game
+          You got an invite to join a game
         </div>
         <div
           style={{
