@@ -145,6 +145,15 @@ export default function Home() {
               TicTacToe
             </h1>
             <p className="text-2xl font-serif text-muted-foreground">Play anywhere, anytime</p>
+            <a
+              href="https://github.com/luggapugga/tictactoe"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
+              data-umami-event="visit-github"
+            >
+              View on GitHub
+            </a>
           </div>
 
           <Card className="border-none shadow-none">
