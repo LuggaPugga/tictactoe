@@ -25,6 +25,7 @@ export const metadata: Metadata = {
   keywords: [
     "tictactoe",
     "ultimate tictactoe",
+    "ultimate tictactoe online",
     "game",
     "multiplayer",
     "online game",
