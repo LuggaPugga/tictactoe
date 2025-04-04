@@ -77,7 +77,7 @@
         "@typescript-eslint/parser": "^8.28.0",
         "@vercel/style-guide": "^6.0.0",
         "eslint-config-prettier": "^10.1.1",
-        "eslint-config-turbo": "^2.0.0",
+        "eslint-config-turbo": "^2.5.0",
         "eslint-plugin-only-warn": "^1.1.0",
         "typescript": "5.8.2",
         "typescript-eslint": "^8.29.0",
@@ -621,7 +621,7 @@
 
     "eslint-config-prettier": ["eslint-config-prettier@10.1.1", "", { "peerDependencies": { "eslint": ">=7.0.0" }, "bin": { "eslint-config-prettier": "bin/cli.js" } }, "sha512-4EQQr6wXwS+ZJSzaR5ZCrYgLxqvUjdXctaEtBqHcbkW944B1NQyO4qpdHQbXBONfwxXdkAY81HH4+LUfrg+zPw=="],
 
-    "eslint-config-turbo": ["eslint-config-turbo@2.4.4", "", { "dependencies": { "eslint-plugin-turbo": "2.4.4" }, "peerDependencies": { "eslint": ">6.6.0", "turbo": ">2.0.0" } }, "sha512-4w/heWywWkFw09a5MY5lCvb9suJlhBSkzNtGTwM5+zRif4rksubaMYy1pD0++5rqoDVcQax25jCrtii9ptsNDw=="],
+    "eslint-config-turbo": ["eslint-config-turbo@2.5.0", "", { "dependencies": { "eslint-plugin-turbo": "2.5.0" }, "peerDependencies": { "eslint": ">6.6.0", "turbo": ">2.0.0" } }, "sha512-QJvZBEWDWQx1JyQCr0uwf4aQYhDSAGoHBdx+cPtpPzNEjZw16Ig8BglXxHZBh3I8/fI1U53cLgXwvb28BUZhPA=="],
 
     "eslint-import-resolver-alias": ["eslint-import-resolver-alias@1.1.2", "", { "peerDependencies": { "eslint-plugin-import": ">=1.4.0" } }, "sha512-WdviM1Eu834zsfjHtcGHtGfcu+F30Od3V7I9Fi57uhBEwPkjDcii7/yW8jAT+gOhn4P/vOxxNAXbFAKsrrc15w=="],
 
@@ -651,7 +651,7 @@
 
     "eslint-plugin-tsdoc": ["eslint-plugin-tsdoc@0.2.17", "", { "dependencies": { "@microsoft/tsdoc": "0.14.2", "@microsoft/tsdoc-config": "0.16.2" } }, "sha512-xRmVi7Zx44lOBuYqG8vzTXuL6IdGOeF9nHX17bjJ8+VE6fsxpdGem0/SBTmAwgYMKYB1WBkqRJVQ+n8GK041pA=="],
 
-    "eslint-plugin-turbo": ["eslint-plugin-turbo@2.4.4", "", { "dependencies": { "dotenv": "16.0.3" }, "peerDependencies": { "eslint": ">6.6.0", "turbo": ">2.0.0" } }, "sha512-myEnQTjr3FkI0j1Fu0Mqnv1z8n0JW5iFTOUNzHaEevjzl+1uzMSsFwks/x8i3rGmI3EYtC1BY8K2B2pS0Vfx6w=="],
+    "eslint-plugin-turbo": ["eslint-plugin-turbo@2.5.0", "", { "dependencies": { "dotenv": "16.0.3" }, "peerDependencies": { "eslint": ">6.6.0", "turbo": ">2.0.0" } }, "sha512-qQk54MrUZv0gnpxV23sccTc+FL3UJ8q7vG7HmXuS2RP8gdjWDwI1CCJTJD8EdRIDjsMxF0xi0AKcMY0CwIlXVg=="],
 
     "eslint-plugin-unicorn": ["eslint-plugin-unicorn@51.0.1", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.22.20", "@eslint-community/eslint-utils": "^4.4.0", "@eslint/eslintrc": "^2.1.4", "ci-info": "^4.0.0", "clean-regexp": "^1.0.0", "core-js-compat": "^3.34.0", "esquery": "^1.5.0", "indent-string": "^4.0.0", "is-builtin-module": "^3.2.1", "jsesc": "^3.0.2", "pluralize": "^8.0.0", "read-pkg-up": "^7.0.1", "regexp-tree": "^0.1.27", "regjsparser": "^0.10.0", "semver": "^7.5.4", "strip-indent": "^3.0.0" }, "peerDependencies": { "eslint": ">=8.56.0" } }, "sha512-MuR/+9VuB0fydoI0nIn2RDA5WISRn4AsJyNSaNKLVwie9/ONvQhxOBbkfSICBPnzKrB77Fh6CZZXjgTt/4Latw=="],
 
