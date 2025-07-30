@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Circle, Eye, Hash, Minus, Trophy, X } from "lucide-react";
-import type { Player, Score } from "@/lib/types";
 import { AnimatePresence, motion } from "framer-motion";
+import { Circle, Eye, Hash, Minus, Trophy, X } from "lucide-react";
+import React from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import type { Player, Score } from "@/lib/types";
 
 interface ScoreboardProps {
 	players: Player[];
