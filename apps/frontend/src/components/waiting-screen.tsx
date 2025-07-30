@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { CheckCircle2, Copy } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { CheckCircle2, Copy } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface WaitingRoomProps {
@@ -13,14 +13,6 @@ interface WaitingRoomProps {
 
 export function WaitingRoom({ gameCode, onCancel }: WaitingRoomProps) {
 	const [isCopied, setIsCopied] = useState(false);
-	const [dots, setDots] = useState(".");
-
-	useEffect(() => {
-		const interval = setInterval(() => {
-			setDots((prev) => (prev.length < 3 ? prev + "." : "."));
-		}, 500);
-		return () => clearInterval(interval);
-	}, []);
 
 	const handleCopyGameCode = () => {
 		navigator.clipboard
@@ -41,7 +33,8 @@ export function WaitingRoom({ gameCode, onCancel }: WaitingRoomProps) {
 
 			<div className="rounded-2xl max-w-md w-full space-y-8 relative z-10">
 				<h2 className="text-3xl font-bold text-center text-primary">
-					Waiting for opponent{dots}
+					Waiting for opponent
+					<span className="dots-animation"></span>
 				</h2>
 
 				<Card className="border shadow-lg backdrop-blur-sm">

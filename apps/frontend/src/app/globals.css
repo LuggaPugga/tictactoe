@@ -53,6 +53,21 @@
 			height: 0;
 		}
 	}
+
+	@keyframes dots {
+		0%,
+		33.33% {
+			content: ".";
+		}
+		33.34%,
+		66.66% {
+			content: "..";
+		}
+		66.67%,
+		100% {
+			content: "...";
+		}
+	}
 }
 
 @utility container {
@@ -138,5 +153,16 @@
 	}
 	body {
 		@apply bg-background text-foreground;
+	}
+
+	.dots-animation {
+		display: inline-block;
+		width: 1.5em;
+		text-align: left;
+	}
+
+	.dots-animation::after {
+		content: ".";
+		animation: dots 1.5s infinite;
 	}
 }
