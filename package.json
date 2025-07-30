@@ -1,24 +1,24 @@
 {
-  "name": "tictactoe",
-  "private": true,
-  "scripts": {
-    "start": "turbo run start",
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.1.3",
-    "prettier": "^3.5.3",
-    "turbo": "^2.5.0"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "packageManager": "bun@1.2.14",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "dependencies": {}
+	"name": "tictactoe",
+	"private": true,
+	"scripts": {
+		"start": "turbo run start",
+		"build": "turbo run build",
+		"dev": "turbo run dev",
+		"format": "prettier --write \"**/*.{ts,tsx,md}\""
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.1.3",
+		"prettier": "^3.5.3",
+		"turbo": "^2.5.0"
+	},
+	"engines": {
+		"node": ">=18"
+	},
+	"packageManager": "bun@1.2.14",
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"dependencies": {}
 }

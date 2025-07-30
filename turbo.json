@@ -1,25 +1,25 @@
 {
-  "$schema": "https://turbo.build/schema.json",
-  "ui": "tui",
-  "tasks": {
-    "start": {
-      "cache": false,
-      "persistent": true
-    },
-    "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "env": [
-        "NEXT_PUBLIC_BACKEND_URL",
-        "NEXT_PUBLIC_APP_URL",
-        "NEXT_PUBLIC_UMAMI_URL",
-        "NEXT_PUBLIC_UMAMI_WEBSITE_ID"
-      ]
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    }
-  }
+	"$schema": "https://turbo.build/schema.json",
+	"ui": "tui",
+	"tasks": {
+		"start": {
+			"cache": false,
+			"persistent": true
+		},
+		"build": {
+			"dependsOn": ["^build"],
+			"inputs": ["$TURBO_DEFAULT$", ".env*"],
+			"outputs": [".next/**", "!.next/cache/**", "dist/**"],
+			"env": [
+				"NEXT_PUBLIC_BACKEND_URL",
+				"NEXT_PUBLIC_APP_URL",
+				"NEXT_PUBLIC_UMAMI_URL",
+				"NEXT_PUBLIC_UMAMI_WEBSITE_ID"
+			]
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		}
+	}
 }

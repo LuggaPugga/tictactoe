@@ -1,26 +1,26 @@
 {
-  "name": "backend",
-  "module": "index.ts",
-  "type": "module",
-  "scripts": {
-    "dev": "bun --watch index.ts",
-    "build": "bun build index.ts --target bun --outdir ./dist",
-    "start": "NODE_ENV=production bun dist/index.js"
-  },
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@repo/typescript-config": "workspace:*"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.1",
-    "@types/socket.io": "^3.0.2",
-    "cors": "^2.8.5",
-    "express": "^5.0.1",
-    "socket.io": "^4.8.1"
-  }
+	"name": "backend",
+	"module": "index.ts",
+	"type": "module",
+	"scripts": {
+		"dev": "bun --watch index.ts",
+		"build": "bun build index.ts --target bun --outdir ./dist",
+		"start": "NODE_ENV=production bun dist/index.js"
+	},
+	"private": true,
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@repo/typescript-config": "workspace:*"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@types/cors": "^2.8.17",
+		"@types/express": "^5.0.1",
+		"@types/socket.io": "^3.0.2",
+		"cors": "^2.8.5",
+		"express": "^5.0.1",
+		"socket.io": "^4.8.1"
+	}
 }
