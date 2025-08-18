@@ -84,6 +84,11 @@ export async function GET() {
 		{
 			width: 1200,
 			height: 630,
+			headers: {
+				"Cache-Control": "public, s-maxage=1",
+				"CDN-Cache-Control": "public, s-maxage=60",
+				"Vercel-CDN-Cache-Control": "public, s-maxage=3600",
+			},
 		},
 	);
 }
