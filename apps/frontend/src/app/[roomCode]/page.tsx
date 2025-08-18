@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { use } from "react";
 import GameComponent from "@/components/game/game";
 
 export const generateMetadata = async ({
@@ -25,11 +26,11 @@ export const generateMetadata = async ({
 	};
 };
 
-export default async function GamePage({
+export default function GamePage({
 	params,
 }: {
 	params: Promise<{ roomCode: string }>;
 }) {
-	const { roomCode } = await params;
+	const { roomCode } = use(params);
 	return <GameComponent roomCode={roomCode} />;
 }
