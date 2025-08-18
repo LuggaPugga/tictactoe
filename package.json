@@ -19,5 +19,7 @@
 		"apps/*",
 		"packages/*"
 	],
-	"dependencies": {}
+	"dependencies": {
+		"@vercel/analytics": "^1.5.0"
+	}
 }
