@@ -1,14 +1,14 @@
-import { Server } from "socket.io";
 import cors from "cors";
 import express from "express";
 import http from "http";
+import { Server } from "socket.io";
 import type {
 	ClientToServerEvents,
-	ServerToClientEvents,
-	InterServerEvents,
-	SocketData,
 	GameRoom,
+	InterServerEvents,
 	QueuePlayer,
+	ServerToClientEvents,
+	SocketData,
 } from "./types";
 
 const app = express();
@@ -485,5 +485,5 @@ app.post("/api/create-room", async (_req, res) => {
 	}
 });
 
-const PORT = process.env["PORT"] || 5000;
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
