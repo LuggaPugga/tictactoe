@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { GeistSans } from "geist/font/sans";
-import Script from "next/script";
 import type React from "react";
 import StructuredData from "@/components/seo/structured-data";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -81,14 +81,7 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning>
-			{process.env.NEXT_PUBLIC_UMAMI_URL &&
-				process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
-					<Script
-						defer
-						src={process.env.NEXT_PUBLIC_UMAMI_URL}
-						data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
-					></Script>
-				)}
+			<Analytics />
 			<body className={`${GeistSans.className} antialiased`}>
 				<ThemeProvider
 					attribute="class"
