@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Circle, Eye, Hash, Minus, Trophy, X } from "lucide-react";
-import React from "react";
+import { useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Player, Score } from "@/lib/types";
@@ -30,7 +30,7 @@ export function Scoreboard({
 	spectatorCount,
 	roomCode,
 }: ScoreboardProps) {
-	const sortedPlayers = React.useMemo(() => {
+	const sortedPlayers = useMemo(() => {
 		return [...players].sort((a, b) => {
 			if (localGame) return 0;
 			if (a.sessionCode === sessionCode) return -1;
@@ -38,6 +38,20 @@ export function Scoreboard({
 			return 0;
 		});
 	}, [players, sessionCode, localGame]);
+
+	const getPlayerSymbol = useCallback(
+		(player: Player): "X" | "O" => {
+			if (localGame) {
+				return player.id === "O" ? "O" : "X";
+			}
+			const key = player.sessionCode || player.id;
+			const originalIndex = players.findIndex(
+				(p) => (p.sessionCode || p.id) === key,
+			);
+			return originalIndex === 1 ? "O" : "X";
+		},
+		[localGame, players],
+	);
 
 	return (
 		<Card className="w-full max-w-lg mx-auto bg-background border-0 shadow-none">
@@ -104,8 +118,7 @@ export function Scoreboard({
 														: "bg-primary text-white"
 												}`}
 											>
-												{player.sessionCode === sessionCode ||
-												player.id === "O" ? (
+												{getPlayerSymbol(player) === "O" ? (
 													<Circle className="size-6" />
 												) : (
 													<X className="size-6" />
