@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { io, type Socket } from "socket.io-client";
+import { getSocket } from "@/lib/socket";
 import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,8 +25,6 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
-
 export default function Home() {
 	const [playerName, setPlayerName] = useState("");
 	const [roomCode, setRoomCode] = useState("");
@@ -34,19 +32,10 @@ export default function Home() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [inQueue, setInQueue] = useState(false);
 	const [queuePosition, setQueuePosition] = useState(0);
-	const [socket, setSocket] = useState<Socket | null>(null);
 	const [activeTab, setActiveTab] = useState("global");
 	const router = useRouter();
 
-	useEffect(() => {
-		const newSocket = io(BACKEND_URL);
-		setSocket(newSocket);
-
-		return () => {
-			newSocket.disconnect();
-		};
-	}, []);
-
+	// Load name from localStorage on mount
 	useEffect(() => {
 		const storedName = localStorage.getItem("name");
 		if (storedName) {
@@ -55,12 +44,7 @@ export default function Home() {
 	}, []);
 
 	useEffect(() => {
-		localStorage.setItem("name", playerName);
-	}, [playerName]);
-
-	useEffect(() => {
-		if (!socket) return;
-
+		const socket = getSocket();
 		const eventHandlers = {
 			joinedQueue: ({ position }: { position: number }) => {
 				setInQueue(true);
@@ -94,7 +78,7 @@ export default function Home() {
 		};
 
 		Object.entries(eventHandlers).forEach(([event, handler]) => {
-			socket.on(event, handler);
+			socket.on(event, handler as any);
 		});
 
 		return () => {
@@ -102,22 +86,20 @@ export default function Home() {
 				socket.off(event);
 			});
 		};
-	}, [socket, playerName, router]);
+	}, [playerName, router]);
 
 	const handleQueueJoin = useCallback(() => {
 		setInQueue(true);
-		if (playerName && socket) {
-			socket.emit("joinQueue", { playerName });
+		if (playerName) {
+			getSocket().emit("joinQueue", { playerName });
 		}
-	}, [playerName, socket]);
+	}, [playerName]);
 
 	const handleLeaveQueue = useCallback(() => {
 		setInQueue(false);
-		if (socket) {
-			setIsLoading(true);
-			socket.emit("leaveQueue");
-		}
-	}, [socket]);
+		setIsLoading(true);
+		getSocket().emit("leaveQueue");
+	}, []);
 
 	const handleCreateRoom = useCallback(async () => {
 		if (playerName) {
@@ -214,7 +196,10 @@ export default function Home() {
 											type="text"
 											placeholder="Enter your name"
 											value={playerName}
-											onChange={(e) => setPlayerName(e.target.value)}
+											onChange={(e) => {
+												setPlayerName(e.target.value);
+												localStorage.setItem("name", e.target.value);
+											}}
 											className="h-11"
 											disabled={inQueue}
 										/>
@@ -225,8 +210,7 @@ export default function Home() {
 													inQueue ? handleLeaveQueue() : handleQueueJoin()
 												}
 												className={`w-full h-11 text-base ${
-													inQueue ??
-													"bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+													inQueue ? "bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700" : ""
 												}`}
 												disabled={!playerName || isLoading}
 												data-umami-event={
@@ -321,7 +305,10 @@ export default function Home() {
 											type="text"
 											placeholder="Enter your name"
 											value={playerName}
-											onChange={(e) => setPlayerName(e.target.value)}
+											onChange={(e) => {
+												setPlayerName(e.target.value);
+												localStorage.setItem("name", e.target.value);
+											}}
 											className="h-11"
 											disabled={inQueue}
 										/>

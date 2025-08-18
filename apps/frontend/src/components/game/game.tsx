@@ -1,19 +1,19 @@
 "use client";
 
+import { motion } from "framer-motion";
+import { LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
-import { io, type Socket } from "socket.io-client";
-import { useRouter } from "next/navigation";
+import { Scoreboard } from "@/components/game/scoreboard";
+import UltimateBoard from "@/components/game/ultimate-board";
+import { WinnerAnimation } from "@/components/game/winning-animation";
 import { RoomNotFound } from "@/components/room-not-found";
-import { WaitingRoom } from "@/components/waiting-screen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { motion } from "framer-motion";
-import { Scoreboard } from "@/components/game/scoreboard";
-import { LogOut } from "lucide-react";
-import UltimateBoard from "@/components/game/ultimate-board";
+import { WaitingRoom } from "@/components/waiting-screen";
+import { getSocket } from "@/lib/socket";
 import type { Player, Score } from "@/lib/types";
-import { WinnerAnimation } from "@/components/game/winning-animation";
 
 export default function GameComponent({ roomCode }: { roomCode: string }) {
 	const [game, setGame] = useState(Array(9).fill(Array(9).fill(null)));
@@ -27,7 +27,6 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 	const [scores, setScores] = useState<Record<string, Score>>({});
 	const [roomExists, setRoomExists] = useState(true);
 	const [playerName, setPlayerName] = useState("");
-	const [socket, setSocket] = useState<Socket | null>(null);
 	const [isNameSet, setIsNameSet] = useState(false);
 	const [roomStatus, setRoomStatus] = useState("waiting");
 	const [isSpectator, setIsSpectator] = useState(false);
@@ -72,22 +71,26 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 		if (!isNameSet) return;
 
 		setIsLoading(true);
-		const newSocket = io(process.env.NEXT_PUBLIC_BACKEND_URL);
-		setSocket(newSocket);
+		const socket = getSocket();
 
-		newSocket.on("connect", () => {
-			console.log("Connected to server");
+		const joinRoom = () => {
 			const storedSessionCode = sessionStorage.getItem(
 				`sessionCode_${roomCode}`,
 			);
-			newSocket.emit("joinRoom", {
+			socket.emit("joinRoom", {
 				roomCode,
 				playerName,
 				sessionCode: storedSessionCode,
 			});
-		});
+		};
 
-		newSocket.on(
+		if (socket.connected) {
+			joinRoom();
+		}
+
+		socket.on("connect", joinRoom);
+
+		socket.on(
 			"waitingForOpponent",
 			({ sessionCode: newSessionCode, status }) => {
 				setSessionCode(newSessionCode);
@@ -97,12 +100,12 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 			},
 		);
 
-		newSocket.on("sessionCode", (newSessionCode) => {
+		socket.on("sessionCode", (newSessionCode) => {
 			setSessionCode(newSessionCode);
 			sessionStorage.setItem(`sessionCode_${roomCode}`, newSessionCode);
 		});
 
-		newSocket.on(
+		socket.on(
 			"gameStart",
 			({
 				players,
@@ -127,7 +130,7 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 			},
 		);
 
-		newSocket.on(
+		socket.on(
 			"updateGame",
 			({ game, globalBoard, currentBoard, currentTurn, scores, winner }) => {
 				setGame(game);
@@ -142,7 +145,7 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 			},
 		);
 
-		newSocket.on("playerDisconnected", (disconnectedSessionCode) => {
+		socket.on("playerDisconnected", (disconnectedSessionCode) => {
 			setPlayers((prevPlayers) =>
 				prevPlayers.map((player) =>
 					player.sessionCode === disconnectedSessionCode
@@ -152,7 +155,7 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 			);
 		});
 
-		newSocket.on("playerReconnected", (reconnectedSessionCode) => {
+		socket.on("playerReconnected", (reconnectedSessionCode) => {
 			setPlayers((prevPlayers) =>
 				prevPlayers.map((player) =>
 					player.sessionCode === reconnectedSessionCode
@@ -162,16 +165,16 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 			);
 		});
 
-		newSocket.on("roomFull", () => {
+		socket.on("roomFull", () => {
 			if (!sessionStorage.getItem(`sessionCode_${roomCode}`)) {
 				alert("Room is full. You can join as a spectator.");
-				newSocket.emit("joinRoom", { roomCode, playerName, asSpectator: true });
+				socket.emit("joinRoom", { roomCode, playerName, asSpectator: true });
 			} else {
 				console.log("Attempting to reconnect to the game...");
 			}
 		});
 
-		newSocket.on(
+		socket.on(
 			"reconnected",
 			({
 				game,
@@ -200,12 +203,12 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 			},
 		);
 
-		newSocket.on("roomNotFound", () => {
+		socket.on("roomNotFound", () => {
 			setRoomExists(false);
 			setIsLoading(false);
 		});
 
-		newSocket.on(
+		socket.on(
 			"gameReset",
 			({ game, globalBoard, currentBoard, currentTurn, scores, winner }) => {
 				setGame(game);
@@ -218,7 +221,7 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 			},
 		);
 
-		newSocket.on("joinedAsSpectator", (data) => {
+		socket.on("joinedAsSpectator", (data) => {
 			setIsSpectator(true);
 			setGame(data.game);
 			setGlobalBoard(data.globalBoard);
@@ -232,16 +235,32 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 			setIsLoading(false);
 		});
 
-		newSocket.on("spectatorJoined", ({ spectators: newSpectators }) => {
+		socket.on("spectatorJoined", ({ spectators: newSpectators }) => {
 			setSpectators(Array.isArray(newSpectators) ? newSpectators : []);
 		});
 
-		newSocket.on("spectatorLeft", ({ spectators: newSpectators }) => {
+		socket.on("spectatorLeft", ({ spectators: newSpectators }) => {
 			setSpectators(Array.isArray(newSpectators) ? newSpectators : []);
 		});
 
 		return () => {
-			newSocket.disconnect();
+			const events = [
+				"connect",
+				"waitingForOpponent",
+				"sessionCode",
+				"gameStart",
+				"updateGame",
+				"playerDisconnected",
+				"playerReconnected",
+				"roomFull",
+				"reconnected",
+				"roomNotFound",
+				"gameReset",
+				"joinedAsSpectator",
+				"spectatorJoined",
+				"spectatorLeft",
+			];
+			events.forEach((e) => socket.off(e));
 		};
 	}, [roomCode, playerName, isNameSet]);
 
@@ -254,13 +273,12 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 	const handleCellClick = useCallback(
 		(boardIndex: number, cellIndex: number) => {
 			if (
-				socket &&
 				game[boardIndex][cellIndex] === null &&
 				currentTurn === sessionCode &&
 				gameStatus !== "over" &&
 				!isSpectator
 			) {
-				socket.emit("makeMove", {
+				getSocket().emit("makeMove", {
 					roomCode,
 					boardIndex,
 					cellIndex,
@@ -268,21 +286,18 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 				});
 			}
 		},
-		[socket, game, currentTurn, sessionCode, gameStatus, roomCode, isSpectator],
+		[game, currentTurn, sessionCode, gameStatus, roomCode, isSpectator],
 	);
 
 	const handleLeaveGame = useCallback(() => {
-		if (socket) {
-			socket.disconnect();
-		}
 		router.push("/");
-	}, [socket, router]);
+	}, [router]);
 
 	const handleRequestReset = useCallback(() => {
-		if (socket && gameStatus === "over" && !isSpectator) {
-			socket.emit("requestGameReset", roomCode);
+		if (gameStatus === "over" && !isSpectator) {
+			getSocket().emit("requestGameReset", roomCode);
 		}
-	}, [socket, roomCode, gameStatus, isSpectator]);
+	}, [roomCode, gameStatus, isSpectator]);
 
 	const handleNameSubmit = useCallback(
 		(e: React.FormEvent<HTMLFormElement>) => {
