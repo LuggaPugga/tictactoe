@@ -1,12 +1,12 @@
 "use client";
 
+import { AnimatePresence, motion, type Variants } from "framer-motion";
+import { Maximize2, Minimize2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
-import LocalBoard from "./local-board";
-import { AnimatePresence, motion } from "framer-motion";
-import type { Game } from "@/lib/types";
-import { Maximize2, Minimize2 } from "lucide-react";
+import LocalBoard from "@/components/game/local-board";
 import { Button } from "@/components/ui/button";
+import type { Game } from "@/lib/types";
 
 interface UltimateBoardProps {
 	game: Game;
@@ -35,7 +35,7 @@ const UltimateBoard: React.FC<UltimateBoardProps> = ({
 		return () => window.removeEventListener("resize", checkMobile);
 	}, []);
 
-	const boardVariants = {
+	const boardVariants: Variants = {
 		hidden: { opacity: 0, scale: 0.8 },
 		visible: {
 			opacity: 1,
@@ -47,7 +47,7 @@ const UltimateBoard: React.FC<UltimateBoardProps> = ({
 		},
 	};
 
-	const fullscreenVariants = {
+	const fullscreenVariants: Variants = {
 		hidden: { opacity: 0, scale: 0.9 },
 		visible: {
 			opacity: 1,
