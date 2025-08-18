@@ -17,7 +17,9 @@ export default function StructuredData() {
 		<Script
 			id="structured-data"
 			type="application/ld+json"
-			dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-		/>
+			strategy="beforeInteractive"
+		>
+			{JSON.stringify(jsonLd)}
+		</Script>
 	);
 }
