@@ -52,21 +52,12 @@ export const metadata: Metadata = {
 		description:
 			"A modern Ultimate TicTacToe game with online multiplayer, local play, and more",
 		siteName: "Ultimate TicTacToe",
-		images: [
-			{
-				url: "/",
-				width: 1200,
-				height: 630,
-				alt: "Ultimate TicTacToe Game Preview",
-			},
-		],
 	},
 	twitter: {
 		card: "summary_large_image",
 		title: "Ultimate TicTacToe - Play anywhere, anytime",
 		description:
 			"A modern Ultimate TicTacToe game with online multiplayer, local play, and more",
-		images: ["/api/og/general"],
 		creator: "@LuggaPugga",
 	},
 	alternates: {
