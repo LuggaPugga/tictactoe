@@ -1,6 +1,6 @@
+import http from "node:http";
 import cors from "cors";
 import express from "express";
-import http from "http";
 import { Server } from "socket.io";
 import type {
 	ClientToServerEvents,
@@ -146,22 +146,49 @@ io.on("connection", (socket) => {
 	socket.roomCode = null;
 
 	socket.on("joinQueue", ({ playerName }) => {
-		if (!socket.inQueue && !socket.roomCode) {
+		if (socket.inQueue) {
+			const index = queue.findIndex((player) => player.socket === socket);
+			if (index !== -1) {
+				queue.splice(index, 1);
+				updateQueuePositions();
+			}
+		}
+
+		let isInActiveRoom = false;
+		if (socket.roomCode) {
+			const room = rooms.get(socket.roomCode);
+			if (
+				room?.players.some(
+					(p) => room.sessionToSocket.get(p.sessionCode) === socket.id,
+				)
+			) {
+				isInActiveRoom = true;
+			} else {
+				socket.roomCode = null;
+			}
+		}
+
+		if (!isInActiveRoom) {
 			socket.inQueue = true;
 			if (queue.length >= MAX_QUEUE_SIZE) {
 				socket.emit("queueFull");
+				socket.inQueue = false;
 				return;
 			}
 
 			const player: QueuePlayer = { socket, playerName };
 			queue.push(player);
 			socket.emit("joinedQueue", { position: queue.length });
+			updateQueuePositions();
 
 			if (queue.length >= 2) {
 				const player1 = queue.shift();
 				const player2 = queue.shift();
 				if (player1 && player2) {
+					player1.socket.inQueue = false;
+					player2.socket.inQueue = false;
 					createLobby(player1, player2);
+					updateQueuePositions();
 				}
 			}
 		} else {
@@ -378,7 +405,7 @@ io.on("connection", (socket) => {
 
 	socket.on("requestGameReset", (roomCode) => {
 		const room = rooms.get(roomCode);
-		if (room && room.winner) {
+		if (room && room.winner !== null) {
 			room.game = Array(9)
 				.fill(null)
 				.map(() => Array(9).fill(null));
@@ -386,7 +413,8 @@ io.on("connection", (socket) => {
 			room.currentBoard = null;
 			room.currentTurn = room.players[0].sessionCode;
 			room.winner = null;
-			room.status = "waiting";
+			const connectedPlayers = room.players.filter((p) => p.connected).length;
+			room.status = connectedPlayers === 2 ? "playing" : "waiting";
 			io.to(roomCode).emit("gameReset", {
 				game: room.game,
 				globalBoard: room.globalBoard,
@@ -407,7 +435,9 @@ io.on("connection", (socket) => {
 				queue.splice(index, 1);
 				updateQueuePositions();
 			}
+			socket.inQueue = false;
 		}
+
 		for (const [roomCode, room] of rooms.entries()) {
 			const disconnectedSessionCode = Array.from(
 				room.sessionToSocket.entries(),
@@ -448,6 +478,8 @@ io.on("connection", (socket) => {
 				break;
 			}
 		}
+
+		socket.roomCode = null;
 	});
 
 	socket.on("reconnect", ({ roomCode, sessionCode }) => {
