@@ -434,12 +434,7 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 				</Button>
 			</div>
 
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.5 }}
-				className="w-full max-w-7xl relative z-10"
-			>
+			<div className="w-full max-w-7xl relative z-10">
 				<h1 className="text-4xl font-bold mb-8 text-center">
 					Ultimate Tic-Tac-Toe
 				</h1>
@@ -492,7 +487,7 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 						</Button>
 					</div>
 				)}
-			</motion.div>
+			</div>
 			<WinnerAnimation
 				isVisible={showAnimation}
 				winner={

@@ -54,7 +54,7 @@ export function Scoreboard({
 	);
 
 	return (
-		<Card className="w-full max-w-lg mx-auto bg-background border-0 shadow-none">
+		<Card className="w-full max-w-lg bg-background border-0 shadow-none">
 			<CardContent className="p-6 space-y-6">
 				{roomCode && (
 					<Card className="rounded-none border-x-0 border-t-0">

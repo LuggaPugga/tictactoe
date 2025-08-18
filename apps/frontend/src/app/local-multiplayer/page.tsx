@@ -285,12 +285,7 @@ export default function LocalMultiplayer() {
 					</form>
 				</motion.div>
 			) : (
-				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5 }}
-					className="w-full max-w-7xl relative z-10"
-				>
+				<div className="w-full max-w-7xl relative z-10">
 					<div className="flex flex-col xl:flex-row gap-8 items-start justify-center">
 						<div className="w-full xl:w-3/4 flex justify-center order-2 xl:order-1">
 							<div className="w-full max-w-[80vh] aspect-square">
@@ -302,7 +297,7 @@ export default function LocalMultiplayer() {
 								/>
 							</div>
 						</div>
-						<div className="w-full lg:w-1/4 lg:fixed lg:right-4 lg:top-1/2 lg:transform lg:-translate-y-1/2 order-1 lg:order-2">
+						<div className="w-full lg:w-1/4 lg:fixed lg:right-4 lg:top-1/2 lg:-translate-y-1/2 order-1 lg:order-2">
 							<Scoreboard
 								localGame={true}
 								players={gameState.players}
@@ -313,7 +308,7 @@ export default function LocalMultiplayer() {
 							/>
 						</div>
 					</div>
-				</motion.div>
+				</div>
 			)}
 			<ContinueGameDialog
 				isOpen={isContinueDialogOpen}
