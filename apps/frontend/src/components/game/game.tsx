@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import { Scoreboard } from "@/components/game/scoreboard";
 import UltimateBoard from "@/components/game/ultimate-board";
 import { WinnerAnimation } from "@/components/game/winning-animation";
@@ -12,45 +12,23 @@ import { RoomNotFound } from "@/components/room-not-found";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WaitingRoom } from "@/components/waiting-screen";
+import { useWinnerAnimation } from "@/hooks/useWinnerAnimation";
+import { gameReducer, initialGameState } from "@/lib/game-reducer";
 import { getSocket } from "@/lib/socket";
-import type { Player, Score } from "@/lib/types";
+import type { Player } from "@/lib/types";
 
 export default function GameComponent({ roomCode }: { roomCode: string }) {
-	const [game, setGame] = useState(Array(9).fill(Array(9).fill(null)));
-	const [globalBoard, setGlobalBoard] = useState(Array(9).fill(null));
-	const [currentBoard, setCurrentBoard] = useState<number | null>(null);
-	const [players, setPlayers] = useState<Player[]>([]);
-	const [currentTurn, setCurrentTurn] = useState<string | null>(null);
-	const [gameStatus, setGameStatus] = useState("waiting");
-	const [winner, setWinner] = useState<string | null>(null);
+	const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
 	const [sessionCode, setSessionCode] = useState<string | null>(null);
-	const [scores, setScores] = useState<Record<string, Score>>({});
 	const [roomExists, setRoomExists] = useState(true);
 	const [playerName, setPlayerName] = useState("");
 	const [isNameSet, setIsNameSet] = useState(false);
-	const [roomStatus, setRoomStatus] = useState("waiting");
 	const [isSpectator, setIsSpectator] = useState(false);
 	const [spectators, setSpectators] = useState<string[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const router = useRouter();
 
-	const [showAnimation, setShowAnimation] = useState(false);
-
-	useEffect(() => {
-		if (winner) {
-			setShowAnimation(true);
-		}
-	}, [winner]);
-
-	useEffect(() => {
-		if (showAnimation) {
-			const timer = setTimeout(() => {
-				setShowAnimation(false);
-			}, 3000);
-
-			return () => clearTimeout(timer);
-		}
-	}, [showAnimation]);
+	const { showAnimation, triggerAnimation, cleanup } = useWinnerAnimation();
 
 	useEffect(() => {
 		const storedSessionCode = sessionStorage.getItem(`sessionCode_${roomCode}`);
@@ -95,7 +73,10 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 			({ sessionCode: newSessionCode, status }) => {
 				setSessionCode(newSessionCode);
 				sessionStorage.setItem(`sessionCode_${roomCode}`, newSessionCode);
-				setRoomStatus(status);
+				dispatch({
+					type: "SET_ROOM_STATUS",
+					status: status === "waiting" ? "waiting" : "playing",
+				});
 				setIsLoading(false);
 			},
 		);
@@ -116,16 +97,26 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 				scores,
 				status,
 			}) => {
-				setPlayers(
-					players.map((player: Player) => ({ ...player, connected: true })),
-				);
-				setGame(game);
-				setGlobalBoard(globalBoard);
-				setCurrentBoard(currentBoard);
-				setCurrentTurn(currentTurn);
-				setGameStatus("playing");
-				setScores(scores);
-				setRoomStatus(status);
+				dispatch({
+					type: "UPDATE_GAME",
+					game,
+					globalBoard,
+					currentBoard,
+					currentTurn,
+					scores,
+				});
+				dispatch({
+					type: "UPDATE_PLAYERS",
+					players: players.map((player: Player) => ({
+						...player,
+						connected: true,
+					})),
+				});
+				dispatch({ type: "SET_GAME_STATUS", status: "playing" });
+				dispatch({
+					type: "SET_ROOM_STATUS",
+					status: status === "waiting" ? "waiting" : "playing",
+				});
 				setIsLoading(false);
 			},
 		);
@@ -133,36 +124,33 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 		socket.on(
 			"updateGame",
 			({ game, globalBoard, currentBoard, currentTurn, scores, winner }) => {
-				setGame(game);
-				setGlobalBoard(globalBoard);
-				setCurrentBoard(currentBoard);
-				setCurrentTurn(currentTurn);
-				setScores(scores);
+				dispatch({
+					type: "UPDATE_GAME",
+					game,
+					globalBoard,
+					currentBoard,
+					currentTurn,
+					scores,
+					winner,
+				});
 				if (winner) {
-					setWinner(winner);
-					setGameStatus("over");
+					triggerAnimation();
 				}
 			},
 		);
 
 		socket.on("playerDisconnected", (disconnectedSessionCode) => {
-			setPlayers((prevPlayers) =>
-				prevPlayers.map((player) =>
-					player.sessionCode === disconnectedSessionCode
-						? { ...player, connected: false }
-						: player,
-				),
-			);
+			dispatch({
+				type: "PLAYER_DISCONNECTED",
+				sessionCode: disconnectedSessionCode,
+			});
 		});
 
 		socket.on("playerReconnected", (reconnectedSessionCode) => {
-			setPlayers((prevPlayers) =>
-				prevPlayers.map((player) =>
-					player.sessionCode === reconnectedSessionCode
-						? { ...player, connected: true }
-						: player,
-				),
-			);
+			dispatch({
+				type: "PLAYER_RECONNECTED",
+				sessionCode: reconnectedSessionCode,
+			});
 		});
 
 		socket.on("roomFull", () => {
@@ -187,19 +175,26 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 				status,
 				spectators,
 			}) => {
-				setGame(game);
-				setGlobalBoard(globalBoard);
-				setCurrentBoard(currentBoard);
-				setCurrentTurn(currentTurn);
-				setPlayers(
-					players.map((player: Player) => ({ ...player, connected: true })),
-				);
-				setScores(scores);
-				setWinner(winner);
-				setGameStatus(winner ? "over" : "playing");
-				setRoomStatus(status);
+				dispatch({
+					type: "RECONNECTED",
+					game,
+					globalBoard,
+					currentBoard,
+					currentTurn,
+					players,
+					scores,
+					winner,
+					status: winner ? "over" : "playing",
+				});
+				dispatch({
+					type: "SET_ROOM_STATUS",
+					status: status === "waiting" ? "waiting" : "playing",
+				});
 				setSpectators(spectators);
 				setIsLoading(false);
+				if (winner) {
+					triggerAnimation();
+				}
 			},
 		);
 
@@ -210,29 +205,57 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 
 		socket.on(
 			"gameReset",
-			({ game, globalBoard, currentBoard, currentTurn, scores, winner }) => {
-				setGame(game);
-				setGlobalBoard(globalBoard);
-				setCurrentBoard(currentBoard);
-				setCurrentTurn(currentTurn);
-				setGameStatus("playing");
-				setWinner(winner);
-				setScores(scores);
+			({
+				game,
+				globalBoard,
+				currentBoard,
+				currentTurn,
+				scores,
+				winner,
+				status,
+			}) => {
+				dispatch({ type: "RESET_GAME" });
+				dispatch({
+					type: "UPDATE_GAME",
+					game,
+					globalBoard,
+					currentBoard,
+					currentTurn,
+					scores,
+					winner,
+				});
+				dispatch({
+					type: "SET_ROOM_STATUS",
+					status: status === "waiting" ? "waiting" : "playing",
+				});
 			},
 		);
 
 		socket.on("joinedAsSpectator", (data) => {
 			setIsSpectator(true);
-			setGame(data.game);
-			setGlobalBoard(data.globalBoard);
-			setCurrentBoard(data.currentBoard);
-			setCurrentTurn(data.currentTurn);
-			setPlayers(data.players);
-			setScores(data.scores);
-			setRoomStatus(data.status);
+			dispatch({
+				type: "UPDATE_GAME",
+				game: data.game,
+				globalBoard: data.globalBoard,
+				currentBoard: data.currentBoard,
+				currentTurn: data.currentTurn,
+				scores: data.scores,
+				winner: data.winner,
+			});
+			dispatch({ type: "UPDATE_PLAYERS", players: data.players });
+			dispatch({
+				type: "SET_GAME_STATUS",
+				status: data.winner ? "over" : "playing",
+			});
+			dispatch({
+				type: "SET_ROOM_STATUS",
+				status: data.status === "waiting" ? "waiting" : "playing",
+			});
 			setSpectators(Array.isArray(data.spectators) ? data.spectators : []);
-			setGameStatus(data.winner ? "over" : "playing");
 			setIsLoading(false);
+			if (data.winner) {
+				triggerAnimation();
+			}
 		});
 
 		socket.on("spectatorJoined", ({ spectators: newSpectators }) => {
@@ -261,21 +284,17 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 				"spectatorLeft",
 			];
 			events.forEach((e) => socket.off(e));
+			cleanup();
 		};
-	}, [roomCode, playerName, isNameSet]);
-
-	useEffect(() => {
-		if (isSpectator && gameStatus === "waiting") {
-			setGameStatus("playing");
-		}
-	}, [isSpectator, gameStatus]);
+	}, [roomCode, playerName, isNameSet, cleanup, triggerAnimation]);
 
 	const handleCellClick = useCallback(
 		(boardIndex: number, cellIndex: number) => {
 			if (
-				game[boardIndex][cellIndex] === null &&
-				currentTurn === sessionCode &&
-				gameStatus !== "over" &&
+				gameState.game[boardIndex][cellIndex] === null &&
+				gameState.currentTurn === sessionCode &&
+				gameState.gameStatus === "playing" &&
+				!gameState.winner &&
 				!isSpectator
 			) {
 				getSocket().emit("makeMove", {
@@ -286,7 +305,15 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 				});
 			}
 		},
-		[game, currentTurn, sessionCode, gameStatus, roomCode, isSpectator],
+		[
+			gameState.game,
+			gameState.currentTurn,
+			sessionCode,
+			gameState.gameStatus,
+			gameState.winner,
+			roomCode,
+			isSpectator,
+		],
 	);
 
 	const handleLeaveGame = useCallback(() => {
@@ -294,10 +321,10 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 	}, [router]);
 
 	const handleRequestReset = useCallback(() => {
-		if (gameStatus === "over" && !isSpectator) {
+		if (gameState.gameStatus === "over" && !isSpectator) {
 			getSocket().emit("requestGameReset", roomCode);
 		}
-	}, [roomCode, gameStatus, isSpectator]);
+	}, [roomCode, gameState.gameStatus, isSpectator]);
 
 	const handleNameSubmit = useCallback(
 		(e: React.FormEvent<HTMLFormElement>) => {
@@ -385,13 +412,13 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 		);
 	}
 
-	if (roomStatus === "waiting") {
+	if (gameState.roomStatus === "waiting") {
 		return <WaitingRoom gameCode={roomCode} onCancel={handleLeaveGame} />;
 	}
 
 	return (
 		<div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
-			<h1>{roomStatus}</h1>
+			<h1>{gameState.roomStatus}</h1>
 			<div className="absolute inset-0 opacity-5">
 				<div className="absolute inset-0 bg-grid-slate-700/[0.1] bg-[size:40px_40px]" />
 			</div>
@@ -421,25 +448,27 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 						You are spectating this game
 					</p>
 				)}
-				{(gameStatus === "playing" || gameStatus === "over" || isSpectator) && (
+				{(gameState.gameStatus === "playing" ||
+					gameState.gameStatus === "over" ||
+					isSpectator) && (
 					<div className="flex flex-col xl:flex-row gap-8 items-start justify-center">
 						<div className="w-full xl:w-3/4 flex justify-center order-2 xl:order-1">
 							<div className="w-full max-w-[80vh] aspect-square">
 								<UltimateBoard
-									game={game}
-									globalBoard={globalBoard}
-									currentBoard={currentBoard}
+									game={gameState.game}
+									globalBoard={gameState.globalBoard}
+									currentBoard={gameState.currentBoard}
 									onCellClick={handleCellClick}
 								/>
 							</div>
 						</div>
-						<div className="w-full lg:w-1/4 lg:fixed lg:right-4 lg:top-1/2 lg:transform lg:-translate-y-1/2 order-1 lg:order-2">
+						<div className="w-full lg:w-1/4 lg:fixed lg:right-4 lg:top-1/2 lg:-translate-y-1/2 order-1 lg:order-2">
 							<Scoreboard
-								players={players}
-								scores={scores}
-								currentTurn={currentTurn}
+								players={gameState.players}
+								scores={gameState.scores}
+								currentTurn={gameState.currentTurn}
 								sessionCode={sessionCode}
-								ended={!!winner}
+								ended={!!gameState.winner}
 								onPlayAgain={handleRequestReset}
 								spectatorCount={spectators.length | 0}
 								roomCode={roomCode}
@@ -447,13 +476,13 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 						</div>
 					</div>
 				)}
-				{gameStatus === "interrupted" && (
+				{gameState.gameStatus === "interrupted" && (
 					<p className="text-red-500 mb-4 text-center">
 						Your opponent has disconnected. You can leave the game or wait for a
 						new opponent.
 					</p>
 				)}
-				{gameStatus === "interrupted" && !isSpectator && (
+				{gameState.gameStatus === "interrupted" && !isSpectator && (
 					<div className="flex justify-center mt-8">
 						<Button
 							onClick={handleRequestReset}
@@ -466,7 +495,10 @@ export default function GameComponent({ roomCode }: { roomCode: string }) {
 			</motion.div>
 			<WinnerAnimation
 				isVisible={showAnimation}
-				winner={players.find((p) => p.sessionCode === winner)?.name || ""}
+				winner={
+					gameState.players.find((p) => p.sessionCode === gameState.winner)
+						?.name || ""
+				}
 			/>
 		</div>
 	);

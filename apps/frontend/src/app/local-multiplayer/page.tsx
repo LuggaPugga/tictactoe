@@ -1,49 +1,24 @@
 "use client";
 
-import type React from "react";
-import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import type React from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
+import { ContinueGameDialog } from "@/components/game/continue-game-dialog";
+import { Scoreboard } from "@/components/game/scoreboard";
+import UltimateBoard from "@/components/game/ultimate-board";
+import { WinnerAnimation } from "@/components/game/winning-animation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import UltimateBoard from "@/components/game/ultimate-board";
-import { Scoreboard } from "@/components/game/scoreboard";
-import type { CellValue, Game, LocalBoard, Player, Score } from "@/lib/types";
-import { WinnerAnimation } from "@/components/game/winning-animation";
+import { useWinnerAnimation } from "@/hooks/useWinnerAnimation";
+import { gameReducer, initialGameState } from "@/lib/game-reducer";
 import { checkWinner } from "@/lib/game-utils";
-import { ContinueGameDialog } from "@/components/game/continue-game-dialog";
+import type { CellValue, Game, LocalBoard, Player, Score } from "@/lib/types";
 
 export default function LocalMultiplayer() {
-	const [players, setPlayers] = useState<Player[]>([]);
-	const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
-	const [game, setGame] = useState<Game>(Array(9).fill(Array(9).fill(null)));
-	const [globalBoard, setGlobalBoard] = useState<LocalBoard>(
-		Array(9).fill(null),
-	);
-	const [currentBoard, setCurrentBoard] = useState<number | null>(null);
-	const [scores, setScores] = useState<Record<string, Score>>({});
-	const [winner, setWinner] = useState<Player | "tie" | null>(null);
-	const [isGameStarted, setIsGameStarted] = useState<boolean>(false);
-	const [isGameOverDialogOpen, setIsGameOverDialogOpen] =
-		useState<boolean>(false);
+	const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
 	const [player1Name, setPlayer1Name] = useState<string>("");
 	const [isContinueDialogOpen, setIsContinueDialogOpen] = useState(false);
-	const [showAnimation, setShowAnimation] = useState(false);
-
-	useEffect(() => {
-		if (winner) {
-			setShowAnimation(true);
-		}
-	}, [winner]);
-
-	useEffect(() => {
-		if (showAnimation) {
-			const timer = setTimeout(() => {
-				setShowAnimation(false);
-			}, 3000);
-
-			return () => clearTimeout(timer);
-		}
-	}, [showAnimation]);
+	const { showAnimation, triggerAnimation, cleanup } = useWinnerAnimation();
 
 	useEffect(() => {
 		const storedName = localStorage.getItem("name");
@@ -55,13 +30,23 @@ export default function LocalMultiplayer() {
 		if (savedGame) {
 			setIsContinueDialogOpen(true);
 			const parsedGame = JSON.parse(savedGame);
-			setIsGameStarted(true);
-			setPlayers(parsedGame.players);
-			setCurrentPlayerIndex(parsedGame.currentPlayerIndex);
-			setGame(parsedGame.game);
-			setGlobalBoard(parsedGame.globalBoard);
-			setCurrentBoard(parsedGame.currentBoard);
-			setScores(parsedGame.scores);
+			dispatch({
+				type: "UPDATE_GAME",
+				game: parsedGame.game,
+				globalBoard: parsedGame.globalBoard,
+				currentBoard: parsedGame.currentBoard,
+				currentTurn: parsedGame.currentTurn,
+				scores: parsedGame.scores,
+				winner: parsedGame.winner,
+			});
+			dispatch({
+				type: "UPDATE_PLAYERS",
+				players: parsedGame.players,
+			});
+			dispatch({
+				type: "SET_GAME_STATUS",
+				status: parsedGame.winner ? "over" : "playing",
+			});
 		}
 	}, []);
 
@@ -73,132 +58,146 @@ export default function LocalMultiplayer() {
 
 		if (player1Name && player2Name) {
 			const newPlayers: Player[] = [
-				{ id: "X", name: player1Name, sessionCode: "", connected: true },
-				{ id: "O", name: player2Name, sessionCode: "", connected: true },
+				{ id: "X", name: player1Name, sessionCode: "player1", connected: true },
+				{ id: "O", name: player2Name, sessionCode: "player2", connected: true },
 			];
-			setPlayers(newPlayers);
-			setScores({
-				X: { wins: 0, losses: 0, ties: 0 },
-				O: { wins: 0, losses: 0, ties: 0 },
+			const initialScores = {
+				player1: { wins: 0, losses: 0, ties: 0 },
+				player2: { wins: 0, losses: 0, ties: 0 },
+			};
+			dispatch({ type: "UPDATE_PLAYERS", players: newPlayers });
+			dispatch({
+				type: "GAME_START",
+				players: newPlayers,
+				currentTurn: "player1",
 			});
-			setIsGameStarted(true);
+			dispatch({
+				type: "UPDATE_GAME",
+				game: Array(9).fill(Array(9).fill(null)),
+				globalBoard: Array(9).fill(null),
+				currentBoard: null,
+				currentTurn: "player1",
+				scores: initialScores,
+			});
 			localStorage.setItem("name", player1Name);
 		}
 	}, []);
 
 	const saveGameState = useCallback(() => {
-		const gameState = {
-			players,
-			currentPlayerIndex,
-			game,
-			globalBoard,
-			currentBoard,
-			scores,
-			isGameStarted,
+		const stateToSave = {
+			players: gameState.players,
+			currentTurn: gameState.currentTurn,
+			game: gameState.game,
+			globalBoard: gameState.globalBoard,
+			currentBoard: gameState.currentBoard,
+			scores: gameState.scores,
+			winner: gameState.winner,
 		};
-		sessionStorage.setItem("ticTacToeGame", JSON.stringify(gameState));
-	}, [
-		players,
-		currentPlayerIndex,
-		game,
-		globalBoard,
-		currentBoard,
-		scores,
-		isGameStarted,
-	]);
+		sessionStorage.setItem("ticTacToeGame", JSON.stringify(stateToSave));
+	}, [gameState]);
 
 	const handleCellClick = useCallback(
 		(boardIndex: number, cellIndex: number) => {
-			const boardToCheck = game[boardIndex];
+			const boardToCheck = gameState.game[boardIndex];
 			if (!boardToCheck) return;
 
 			const cellValue = boardToCheck[cellIndex];
 			if (cellValue === undefined) return;
 
+			if (gameState.gameStatus !== "playing" || gameState.winner) return;
+
+			const currentPlayer = gameState.players.find(
+				(p) => p.sessionCode === gameState.currentTurn,
+			);
+			if (!currentPlayer) return;
+
 			if (
 				cellValue === null &&
-				(currentBoard === null ||
-					currentBoard === boardIndex ||
-					(currentBoard !== null &&
-						game[currentBoard]?.every((cell) => cell !== null)))
+				(gameState.currentBoard === null ||
+					gameState.currentBoard === boardIndex ||
+					(gameState.currentBoard !== null &&
+						gameState.game[gameState.currentBoard]?.every(
+							(cell) => cell !== null,
+						)))
 			) {
-				const newGame: Game = game.map((board, i) =>
+				const newGame: Game = gameState.game.map((board, i) =>
 					i === boardIndex
 						? board.map((cell, j) =>
-								j === cellIndex
-									? (players[currentPlayerIndex]?.id as CellValue)
-									: cell,
+								j === cellIndex ? (currentPlayer.id as CellValue) : cell,
 							)
 						: board,
 				);
-				setGame(newGame);
 
 				const boardToCheck = newGame[boardIndex];
 				if (!boardToCheck) return;
 
 				const localWinner = checkWinner(boardToCheck);
-				const newGlobalBoard: LocalBoard = [...globalBoard];
+				const newGlobalBoard: LocalBoard = [...gameState.globalBoard];
 				if (localWinner) {
 					newGlobalBoard[boardIndex] =
 						localWinner === "tie" ? null : localWinner;
 				}
-				setGlobalBoard(newGlobalBoard);
+
+				const nextBoardCells = newGame[cellIndex];
+				const isBoardFull =
+					nextBoardCells?.every((cell) => cell !== null) || false;
+				const isBoardWon = newGlobalBoard[cellIndex] !== null;
+				const newCurrentBoard = isBoardFull || isBoardWon ? null : cellIndex;
 
 				const globalWinner = checkWinner(newGlobalBoard);
 				if (globalWinner) {
-					const currentPlayer = players[currentPlayerIndex];
+					const winnerSessionCode =
+						globalWinner === "tie" ? null : currentPlayer.sessionCode;
+
+					const newScores: Record<string, Score> = { ...gameState.scores };
 					if (globalWinner === "tie") {
-						setWinner("tie");
-					} else if (currentPlayer) {
-						setWinner(currentPlayer);
+						if (newScores.player1) newScores.player1.ties++;
+						if (newScores.player2) newScores.player2.ties++;
 					} else {
-						return;
+						if (newScores[currentPlayer.sessionCode])
+							newScores[currentPlayer.sessionCode].wins++;
+						const otherPlayerCode =
+							currentPlayer.sessionCode === "player1" ? "player2" : "player1";
+						if (newScores[otherPlayerCode]) newScores[otherPlayerCode].losses++;
 					}
 
-					setIsGameOverDialogOpen(true);
-
-					const newScores: Record<string, Score> = { ...scores };
-					if (globalWinner === "tie") {
-						if (newScores.X) newScores.X.ties++;
-						if (newScores.O) newScores.O.ties++;
-					} else {
-						if (newScores[globalWinner]) newScores[globalWinner].wins++;
-						const otherPlayer = globalWinner === "X" ? "O" : "X";
-						if (newScores[otherPlayer]) newScores[otherPlayer].losses++;
-					}
-					setScores(newScores);
+					dispatch({
+						type: "UPDATE_GAME",
+						game: newGame,
+						globalBoard: newGlobalBoard,
+						currentBoard: newCurrentBoard,
+						currentTurn: gameState.currentTurn,
+						scores: newScores,
+						winner: winnerSessionCode,
+					});
+					triggerAnimation();
 				} else {
-					setCurrentPlayerIndex(1 - currentPlayerIndex);
+					const nextPlayerCode =
+						currentPlayer.sessionCode === "player1" ? "player2" : "player1";
 
-					const nextBoardCells = newGame[cellIndex];
-					const isBoardFull =
-						nextBoardCells?.every((cell) => cell !== null) || false;
-					const isBoardWon = newGlobalBoard[cellIndex] !== null;
-
-					setCurrentBoard(isBoardFull || isBoardWon ? null : cellIndex);
+					dispatch({
+						type: "UPDATE_GAME",
+						game: newGame,
+						globalBoard: newGlobalBoard,
+						currentBoard: newCurrentBoard,
+						currentTurn: nextPlayerCode,
+						scores: gameState.scores,
+					});
 				}
 			}
 			saveGameState();
 		},
-		[
-			game,
-			globalBoard,
-			currentBoard,
-			players,
-			currentPlayerIndex,
-			scores,
-			saveGameState,
-		],
+		[gameState, saveGameState, triggerAnimation],
 	);
 
 	const handlePlayAgain = useCallback(() => {
-		setGame(Array(9).fill(Array(9).fill(null)));
-		setGlobalBoard(Array(9).fill(null));
-		setCurrentBoard(null);
-		setCurrentPlayerIndex(0);
-		setWinner(null);
-		setIsGameOverDialogOpen(false);
-	}, []);
+		dispatch({ type: "RESET_GAME" });
+		dispatch({
+			type: "GAME_START",
+			players: gameState.players,
+			currentTurn: "player1",
+		});
+	}, [gameState.players]);
 
 	const handleContinueGame = () => {
 		setIsContinueDialogOpen(false);
@@ -207,14 +206,8 @@ export default function LocalMultiplayer() {
 	const handleNewGame = () => {
 		sessionStorage.removeItem("ticTacToeGame");
 		setIsContinueDialogOpen(false);
-		setIsGameStarted(false);
-		setPlayers([]);
-		setGame(Array(9).fill(Array(9).fill(null)));
-		setGlobalBoard(Array(9).fill(null));
-		setCurrentBoard(null);
-		setCurrentPlayerIndex(0);
-		setScores({});
-		setWinner(null);
+		dispatch({ type: "RESET_GAME" });
+		dispatch({ type: "SET_GAME_STATUS", status: "waiting" });
 	};
 
 	useEffect(() => {
@@ -226,16 +219,22 @@ export default function LocalMultiplayer() {
 
 		return () => {
 			window.removeEventListener("beforeunload", handleBeforeUnload);
+			cleanup();
 		};
-	}, [saveGameState]);
+	}, [saveGameState, cleanup]);
 
 	return (
-		<div className="min-h-screen flex flex-col items-center justify-center p-4 text-foreground relative overflow-hidden">
-			<div className="absolute inset-0 opacity-10 dark:opacity-5">
-				<div className="absolute inset-0 bg-grid-slate-300/[0.1] dark:bg-grid-slate-700/[0.1] bg-[size:40px_40px]" />
+		<div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-background text-foreground">
+			<div className="absolute inset-0 opacity-5">
+				<div className="absolute inset-0 bg-grid-slate-700/[0.1] bg-[size:40px_40px]" />
 			</div>
-			{!isGameStarted ? (
-				<div className="rounded-2xl shadow-xl p-8 max-w-md w-full space-y-8 relative z-10 border border-border/40">
+			{gameState.gameStatus === "waiting" ? (
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5 }}
+					className="rounded-2xl shadow-xl p-8 max-w-md w-full space-y-8 relative z-10 border border-border/40"
+				>
 					<div className="text-center space-y-2">
 						<h1 className="text-3xl font-bold text-[#c1644d] dark:text-[#e07a5f]">
 							Local Multiplayer
@@ -284,7 +283,7 @@ export default function LocalMultiplayer() {
 							Start Game
 						</Button>
 					</form>
-				</div>
+				</motion.div>
 			) : (
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
@@ -296,9 +295,9 @@ export default function LocalMultiplayer() {
 						<div className="w-full xl:w-3/4 flex justify-center order-2 xl:order-1">
 							<div className="w-full max-w-[80vh] aspect-square">
 								<UltimateBoard
-									game={game}
-									globalBoard={globalBoard}
-									currentBoard={currentBoard}
+									game={gameState.game}
+									globalBoard={gameState.globalBoard}
+									currentBoard={gameState.currentBoard}
 									onCellClick={handleCellClick}
 								/>
 							</div>
@@ -306,11 +305,11 @@ export default function LocalMultiplayer() {
 						<div className="w-full lg:w-1/4 lg:fixed lg:right-4 lg:top-1/2 lg:transform lg:-translate-y-1/2 order-1 lg:order-2">
 							<Scoreboard
 								localGame={true}
-								players={players}
-								scores={scores}
-								currentTurn={players[currentPlayerIndex]?.id || "X"}
+								players={gameState.players}
+								scores={gameState.scores}
+								currentTurn={gameState.currentTurn}
 								onPlayAgain={handlePlayAgain}
-								ended={isGameOverDialogOpen}
+								ended={gameState.gameStatus === "over"}
 							/>
 						</div>
 					</div>
@@ -324,7 +323,12 @@ export default function LocalMultiplayer() {
 			/>
 			<WinnerAnimation
 				isVisible={showAnimation}
-				winner={winner && winner !== "tie" ? winner.name : ""}
+				winner={
+					gameState.winner
+						? gameState.players.find((p) => p.sessionCode === gameState.winner)
+								?.name || ""
+						: ""
+				}
 				onAnimationComplete={() => console.log("Animation completed")}
 			/>
 		</div>

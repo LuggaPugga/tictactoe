@@ -1,7 +1,7 @@
-import React from "react";
 import { motion } from "framer-motion";
-import { X, Circle } from "lucide-react";
-import type { LocalBoard as LocalBoardType, CellValue } from "@/lib/types";
+import { Circle, X } from "lucide-react";
+import type React from "react";
+import type { CellValue, LocalBoard as LocalBoardType } from "@/lib/types";
 
 interface LocalBoardProps {
 	board: LocalBoardType;
@@ -43,6 +43,7 @@ const LocalBoard: React.FC<LocalBoardProps> = ({
 					viewBox="0 0 100 100"
 					preserveAspectRatio="none"
 				>
+					<title>Grid lines</title>
 					<path
 						d="M33.33 0 L33.33 100"
 						stroke="currentColor"
@@ -75,7 +76,11 @@ const LocalBoard: React.FC<LocalBoardProps> = ({
 				<div className="grid grid-cols-3 h-full w-full relative z-20">
 					{board.map((cell, cellIndex) => (
 						<button
-							key={cellIndex}
+							type="button"
+							key={`${boardIndex}-${
+								// biome-ignore lint/suspicious/noArrayIndexKey: <cellIndex is unique and matches the cell value>
+								cellIndex
+							}`}
 							className={`${getCellStyle(cell)} aspect-square`}
 							onClick={() => isActive && onCellClick(boardIndex, cellIndex)}
 							disabled={!isActive || cell !== null}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getSocket } from "@/lib/socket";
 import { AnimatePresence, motion } from "framer-motion";
-import { Input } from "@/components/ui/input";
+import { Loader2, BotIcon as Robot, Users, Wifi, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -13,17 +13,17 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { BotIcon as Robot, Loader2, Users, Wifi, X } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { createRoom } from "@/utils/create-room";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getSocket } from "@/lib/socket";
+import { createRoom } from "@/utils/create-room";
 
 export default function Home() {
 	const [playerName, setPlayerName] = useState("");
@@ -35,7 +35,6 @@ export default function Home() {
 	const [activeTab, setActiveTab] = useState("global");
 	const router = useRouter();
 
-	// Load name from localStorage on mount
 	useEffect(() => {
 		const storedName = localStorage.getItem("name");
 		if (storedName) {
@@ -78,7 +77,7 @@ export default function Home() {
 		};
 
 		Object.entries(eventHandlers).forEach(([event, handler]) => {
-			socket.on(event, handler as any);
+			socket.on(event, handler);
 		});
 
 		return () => {
