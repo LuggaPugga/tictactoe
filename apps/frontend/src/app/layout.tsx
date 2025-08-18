@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 	description:
 		"A modern Ultimate TicTacToe game with online multiplayer and local play. Challenge friends in this strategic classic game.",
 	metadataBase: new URL(
-		process.env.NEXT_PUBLIC_APP_URL || "https://tictactoe.example.com",
+		process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
 	),
 	authors: [{ name: "LuggaPugga" }],
 	keywords: [
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
 		siteName: "Ultimate TicTacToe",
 		images: [
 			{
-				url: "/api/og/general",
+				url: "/",
 				width: 1200,
 				height: 630,
 				alt: "Ultimate TicTacToe Game Preview",
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
 		card: "summary_large_image",
 		title: "Ultimate TicTacToe - Play anywhere, anytime",
 		description:
-			"A modern TicTacToe game with online multiplayer, local play, and more",
+			"A modern Ultimate TicTacToe game with online multiplayer, local play, and more",
 		images: ["/api/og/general"],
 		creator: "@LuggaPugga",
 	},

@@ -1,9 +1,19 @@
 import { ImageResponse } from "next/og";
-import type { NextRequest } from "next/server";
 
-export async function GET(request: NextRequest) {
-	const { searchParams } = new URL(request.url);
-	const roomCode = searchParams.get("roomCode");
+export const dynamic = "force-static";
+export const contentType = "image/png";
+
+export const size = {
+	width: 1200,
+	height: 630,
+};
+
+export default async function Image({
+	params,
+}: {
+	params: { roomCode: string };
+}) {
+	const { roomCode } = params;
 
 	if ((roomCode && roomCode.length !== 6) || !roomCode) {
 		return new Response("Room code must be 6 characters long", { status: 400 });
