@@ -3,9 +3,9 @@ import type { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
 	const { searchParams } = new URL(request.url);
-	const roomCode = searchParams.get("roomCode") || "ABC123";
+	const roomCode = searchParams.get("roomCode");
 
-	if (roomCode.length !== 6) {
+	if ((roomCode && roomCode.length !== 6) || !roomCode) {
 		return new Response("Room code must be 6 characters long", { status: 400 });
 	}
 
