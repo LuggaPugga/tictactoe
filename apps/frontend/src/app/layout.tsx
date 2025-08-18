@@ -19,7 +19,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
 	title: "Ultimate TicTacToe - Play anywhere, anytime",
 	description:
-		"A modern TicTacToe game with online multiplayer and local play. Challenge friends in this strategic classic game.",
+		"A modern Ultimate TicTacToe game with online multiplayer and local play. Challenge friends in this strategic classic game.",
 	metadataBase: new URL(
 		process.env.NEXT_PUBLIC_APP_URL || "https://tictactoe.example.com",
 	),
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
 		url: "/",
 		title: "Ultimate TicTacToe - Play anywhere, anytime",
 		description:
-			"A modern TicTacToe game with online multiplayer, local play, and more",
+			"A modern Ultimate TicTacToe game with online multiplayer, local play, and more",
 		siteName: "Ultimate TicTacToe",
 		images: [
 			{

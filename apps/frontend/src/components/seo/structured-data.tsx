@@ -6,11 +6,11 @@ export default function StructuredData() {
 	const jsonLd = {
 		"@context": "https://schema.org",
 		"@type": "SoftwareApplication",
-		name: "TicTacToe",
+		name: "Ultimate TicTacToe",
 		applicationCategory: "GameApplication",
 		operatingSystem: "Web",
 		description:
-			"A modern TicTacToe game with online multiplayer, local play, and more",
+			"A modern Ultimate TicTacToe game with online multiplayer, local play, and more",
 	};
 
 	return (
