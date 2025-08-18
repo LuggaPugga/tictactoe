@@ -15,13 +15,10 @@ export function WaitingRoom({ gameCode, onCancel }: WaitingRoomProps) {
 	const [isCopied, setIsCopied] = useState(false);
 
 	const handleCopyGameCode = () => {
-		navigator.clipboard
-			.writeText(gameCode)
-			.then(() => {
-				setIsCopied(true);
-				setTimeout(() => setIsCopied(false), 2000);
-			})
-			.catch((err) => console.error("Failed to copy game code:", err));
+		navigator.clipboard.writeText(gameCode).then(() => {
+			setIsCopied(true);
+			setTimeout(() => setIsCopied(false), 2000);
+		});
 	};
 
 	return (

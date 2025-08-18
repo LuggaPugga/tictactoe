@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
-import React from "react";
 import { GeistSans } from "geist/font/sans";
 import Script from "next/script";
+import type React from "react";
 import StructuredData from "@/components/seo/structured-data";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export const viewport: Viewport = {
 	width: "device-width",

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import { Home, Loader2, Wifi } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { createRoom } from "@/utils/create-room";
 
@@ -14,16 +14,11 @@ export function RoomNotFound() {
 
 	const handleCreateRoom = async () => {
 		setIsLoading(true);
-		try {
-			const roomCode = await createRoom();
-			if (roomCode) {
-				router.push(`/${roomCode}`);
-			} else {
-				alert("Failed to create room. Please try again.");
-			}
-		} finally {
-			setIsLoading(false);
-		}
+		await createRoom()
+			.then((roomCode) =>
+				roomCode ? router.push(`/${roomCode}`) : alert("Failed to create room"),
+			)
+			.finally(() => setIsLoading(false));
 	};
 
 	return (

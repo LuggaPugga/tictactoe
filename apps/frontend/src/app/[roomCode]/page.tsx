@@ -1,5 +1,5 @@
-import GameComponent from "@/components/game/game";
 import type { Metadata } from "next";
+import GameComponent from "@/components/game/game";
 
 export const generateMetadata = async ({
 	params,
