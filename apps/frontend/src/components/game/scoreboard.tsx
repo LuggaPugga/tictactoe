@@ -141,7 +141,7 @@ export function Scoreboard({
 											</div>
 										</div>
 										{!localGame && !player.connected && (
-											<div className="text-sm font-medium text-red-500">
+											<div className="text-sm font-medium text-yellow-300">
 												(Disconnected)
 											</div>
 										)}
