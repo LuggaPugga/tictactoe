@@ -210,7 +210,9 @@ export default function Home() {
 													inQueue ? handleLeaveQueue() : handleQueueJoin()
 												}
 												className={`w-full h-11 text-base ${
-													inQueue ? "bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700" : ""
+													inQueue
+														? "bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+														: ""
 												}`}
 												disabled={!playerName || isLoading}
 												data-umami-event={
