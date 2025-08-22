@@ -16,7 +16,9 @@ export function RoomNotFound() {
 		setIsLoading(true);
 		await createRoom()
 			.then((roomCode) =>
-				roomCode ? router.push(`/${roomCode}`) : alert("Failed to create room"),
+				roomCode
+					? router.push(`/game/${roomCode}`)
+					: alert("Failed to create room"),
 			)
 			.finally(() => setIsLoading(false));
 	};
