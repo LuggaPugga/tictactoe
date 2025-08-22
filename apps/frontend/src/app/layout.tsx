@@ -17,22 +17,21 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-	title: "Ultimate TicTacToe - Play anywhere, anytime",
+	title: "Ultimate Tic Tac Toe — Play Online or Locally",
 	description:
-		"A modern Ultimate TicTacToe game with online multiplayer and local play. Challenge friends in this strategic classic game.",
+		"Play Ultimate Tic Tac Toe online or locally. Create private rooms, quick match globally, and enjoy a fast, strategic 9×9 board experience.",
 	metadataBase: new URL(
 		process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
 	),
 	authors: [{ name: "LuggaPugga" }],
 	keywords: [
-		"tictactoe",
-		"ultimate tictactoe",
-		"ultimate tictactoe online",
-		"game",
-		"multiplayer",
-		"online game",
-		"strategy game",
-		"board game",
+		"ultimate tic tac toe",
+		"how to play ultimate tic tac toe",
+		"ultimate tic tac toe online",
+		"ultimate tic tac toe rules",
+		"ultimate tic tac toe strategy",
+		"play ultimate tic tac toe",
+		"multiplayer board game",
 	],
 	creator: "LuggaPugga",
 	publisher: "LuggaPugga",
@@ -48,16 +47,16 @@ export const metadata: Metadata = {
 		type: "website",
 		locale: "en_US",
 		url: "/",
-		title: "Ultimate TicTacToe - Play anywhere, anytime",
+		title: "Ultimate Tic Tac Toe — Play Online or Locally",
 		description:
-			"A modern Ultimate TicTacToe game with online multiplayer, local play, and more",
-		siteName: "Ultimate TicTacToe",
+			"Fast, strategic Ultimate Tic Tac Toe with global matchmaking and private rooms.",
+		siteName: "Ultimate Tic Tac Toe",
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Ultimate TicTacToe - Play anywhere, anytime",
+		title: "Ultimate Tic Tac Toe — Play Online or Locally",
 		description:
-			"A modern Ultimate TicTacToe game with online multiplayer, local play, and more",
+			"Play Ultimate Tic Tac Toe with friends or quick match globally.",
 		creator: "@LuggaPugga",
 	},
 	alternates: {
