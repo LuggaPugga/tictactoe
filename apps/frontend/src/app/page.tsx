@@ -72,7 +72,7 @@ export default function Home() {
 			}) => {
 				sessionStorage.setItem(`playerName_${roomCode}`, playerName);
 				sessionStorage.setItem(`sessionCode_${roomCode}`, sessionCode);
-				router.push(`/${roomCode}`);
+				router.push(`/game/${roomCode}`);
 			},
 		};
 
@@ -106,7 +106,7 @@ export default function Home() {
 			const roomCode = await createRoom();
 			if (roomCode) {
 				sessionStorage.setItem(`playerName_${roomCode}`, playerName);
-				router.push(`/${roomCode}`);
+				router.push(`/game/${roomCode}`);
 			} else {
 				alert("Failed to create room. Please try again.");
 			}
@@ -117,7 +117,7 @@ export default function Home() {
 	const handleJoinRoom = useCallback(() => {
 		if (playerName && roomCode) {
 			sessionStorage.setItem(`playerName_${roomCode}`, playerName);
-			router.push(`/${roomCode}`);
+			router.push(`/game/${roomCode}`);
 		}
 	}, [playerName, roomCode, router]);
 
@@ -139,21 +139,30 @@ export default function Home() {
 				<ThemeToggle />
 				<div className="w-full max-w-lg space-y-8">
 					<div className="text-center space-y-4">
-						<h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-primary">
-							TicTacToe
+						<h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary">
+							Ultimate Tic Tac Toe
 						</h1>
 						<p className="text-2xl font-serif text-muted-foreground">
-							Play anywhere, anytime
+							Play online or locally
 						</p>
-						<a
-							href="https://github.com/luggapugga/tictactoe"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
-							data-umami-event="visit-github"
-						>
-							View on GitHub
-						</a>
+						<p className="text-xs text-muted-foreground">
+							<a
+								href="/how-to-play"
+								className="underline underline-offset-4 hover:text-primary"
+							>
+								How to play
+							</a>
+							<span className="mx-2">·</span>
+							<a
+								href="https://github.com/luggapugga/tictactoe"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="underline underline-offset-4 hover:text-primary"
+								data-umami-event="visit-github"
+							>
+								GitHub
+							</a>
+						</p>
 					</div>
 
 					<Card className="border-none shadow-none">
@@ -352,6 +361,24 @@ export default function Home() {
 							</Tabs>
 						</CardContent>
 					</Card>
+				</div>
+				<div className="w-full max-w-lg mx-auto mt-2 text-center text-xs text-muted-foreground">
+					<a
+						href="/how-to-play"
+						className="underline underline-offset-4 hover:text-primary"
+					>
+						Rules
+					</a>
+					<span className="mx-2">·</span>
+					<a
+						href="https://github.com/luggapugga/tictactoe"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="underline underline-offset-4 hover:text-primary"
+						data-umami-event="visit-github"
+					>
+						GitHub
+					</a>
 				</div>
 			</div>
 		</div>
