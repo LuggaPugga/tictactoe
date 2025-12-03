@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
 import { GeistSans } from "geist/font/sans";
 import type React from "react";
+import Analytics from "@/components/analytics";
 import StructuredData from "@/components/seo/structured-data";
 import { ThemeProvider } from "@/components/theme-provider";
 
