@@ -8,121 +8,120 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as GameRoomCodeRouteImport } from "./routes/game.$roomCode";
-import { Route as HowToPlayRouteImport } from "./routes/how-to-play";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as LocalMultiplayerRouteImport } from "./routes/local-multiplayer";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as LocalMultiplayerRouteImport } from './routes/local-multiplayer'
+import { Route as HowToPlayRouteImport } from './routes/how-to-play'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as GameRoomCodeRouteImport } from './routes/game.$roomCode'
 
 const LocalMultiplayerRoute = LocalMultiplayerRouteImport.update({
-	id: "/local-multiplayer",
-	path: "/local-multiplayer",
-	getParentRoute: () => rootRouteImport,
-} as any);
+  id: '/local-multiplayer',
+  path: '/local-multiplayer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HowToPlayRoute = HowToPlayRouteImport.update({
-	id: "/how-to-play",
-	path: "/how-to-play",
-	getParentRoute: () => rootRouteImport,
-} as any);
+  id: '/how-to-play',
+  path: '/how-to-play',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
-	id: "/",
-	path: "/",
-	getParentRoute: () => rootRouteImport,
-} as any);
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GameRoomCodeRoute = GameRoomCodeRouteImport.update({
-	id: "/game/$roomCode",
-	path: "/game/$roomCode",
-	getParentRoute: () => rootRouteImport,
-} as any);
+  id: '/game/$roomCode',
+  path: '/game/$roomCode',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
-	"/": typeof IndexRoute;
-	"/how-to-play": typeof HowToPlayRoute;
-	"/local-multiplayer": typeof LocalMultiplayerRoute;
-	"/game/$roomCode": typeof GameRoomCodeRoute;
+  '/': typeof IndexRoute
+  '/how-to-play': typeof HowToPlayRoute
+  '/local-multiplayer': typeof LocalMultiplayerRoute
+  '/game/$roomCode': typeof GameRoomCodeRoute
 }
 export interface FileRoutesByTo {
-	"/": typeof IndexRoute;
-	"/how-to-play": typeof HowToPlayRoute;
-	"/local-multiplayer": typeof LocalMultiplayerRoute;
-	"/game/$roomCode": typeof GameRoomCodeRoute;
+  '/': typeof IndexRoute
+  '/how-to-play': typeof HowToPlayRoute
+  '/local-multiplayer': typeof LocalMultiplayerRoute
+  '/game/$roomCode': typeof GameRoomCodeRoute
 }
 export interface FileRoutesById {
-	__root__: typeof rootRouteImport;
-	"/": typeof IndexRoute;
-	"/how-to-play": typeof HowToPlayRoute;
-	"/local-multiplayer": typeof LocalMultiplayerRoute;
-	"/game/$roomCode": typeof GameRoomCodeRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/how-to-play': typeof HowToPlayRoute
+  '/local-multiplayer': typeof LocalMultiplayerRoute
+  '/game/$roomCode': typeof GameRoomCodeRoute
 }
 export interface FileRouteTypes {
-	fileRoutesByFullPath: FileRoutesByFullPath;
-	fullPaths: "/" | "/how-to-play" | "/local-multiplayer" | "/game/$roomCode";
-	fileRoutesByTo: FileRoutesByTo;
-	to: "/" | "/how-to-play" | "/local-multiplayer" | "/game/$roomCode";
-	id:
-		| "__root__"
-		| "/"
-		| "/how-to-play"
-		| "/local-multiplayer"
-		| "/game/$roomCode";
-	fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/how-to-play' | '/local-multiplayer' | '/game/$roomCode'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/how-to-play' | '/local-multiplayer' | '/game/$roomCode'
+  id:
+    | '__root__'
+    | '/'
+    | '/how-to-play'
+    | '/local-multiplayer'
+    | '/game/$roomCode'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-	IndexRoute: typeof IndexRoute;
-	HowToPlayRoute: typeof HowToPlayRoute;
-	LocalMultiplayerRoute: typeof LocalMultiplayerRoute;
-	GameRoomCodeRoute: typeof GameRoomCodeRoute;
+  IndexRoute: typeof IndexRoute
+  HowToPlayRoute: typeof HowToPlayRoute
+  LocalMultiplayerRoute: typeof LocalMultiplayerRoute
+  GameRoomCodeRoute: typeof GameRoomCodeRoute
 }
 
-declare module "@tanstack/solid-router" {
-	interface FileRoutesByPath {
-		"/local-multiplayer": {
-			id: "/local-multiplayer";
-			path: "/local-multiplayer";
-			fullPath: "/local-multiplayer";
-			preLoaderRoute: typeof LocalMultiplayerRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-		"/how-to-play": {
-			id: "/how-to-play";
-			path: "/how-to-play";
-			fullPath: "/how-to-play";
-			preLoaderRoute: typeof HowToPlayRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-		"/": {
-			id: "/";
-			path: "/";
-			fullPath: "/";
-			preLoaderRoute: typeof IndexRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-		"/game/$roomCode": {
-			id: "/game/$roomCode";
-			path: "/game/$roomCode";
-			fullPath: "/game/$roomCode";
-			preLoaderRoute: typeof GameRoomCodeRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-	}
+declare module '@tanstack/solid-router' {
+  interface FileRoutesByPath {
+    '/local-multiplayer': {
+      id: '/local-multiplayer'
+      path: '/local-multiplayer'
+      fullPath: '/local-multiplayer'
+      preLoaderRoute: typeof LocalMultiplayerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-to-play': {
+      id: '/how-to-play'
+      path: '/how-to-play'
+      fullPath: '/how-to-play'
+      preLoaderRoute: typeof HowToPlayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/game/$roomCode': {
+      id: '/game/$roomCode'
+      path: '/game/$roomCode'
+      fullPath: '/game/$roomCode'
+      preLoaderRoute: typeof GameRoomCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+  }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-	IndexRoute: IndexRoute,
-	HowToPlayRoute: HowToPlayRoute,
-	LocalMultiplayerRoute: LocalMultiplayerRoute,
-	GameRoomCodeRoute: GameRoomCodeRoute,
-};
+  IndexRoute: IndexRoute,
+  HowToPlayRoute: HowToPlayRoute,
+  LocalMultiplayerRoute: LocalMultiplayerRoute,
+  GameRoomCodeRoute: GameRoomCodeRoute,
+}
 export const routeTree = rootRouteImport
-	._addFileChildren(rootRouteChildren)
-	._addFileTypes<FileRouteTypes>();
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
 
-import type { createStart } from "@tanstack/solid-start";
-import type { getRouter } from "./router.tsx";
-
-declare module "@tanstack/solid-start" {
-	interface Register {
-		ssr: true;
-		router: Awaited<ReturnType<typeof getRouter>>;
-	}
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/solid-start'
+declare module '@tanstack/solid-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
 }
