@@ -2,7 +2,6 @@ import { useNavigate } from "@tanstack/solid-router";
 import { House, Loader, Wifi } from "lucide-solid";
 import { createSignal, Show } from "solid-js";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { createRoom } from "@/lib/ws-client";
 
 export function RoomNotFound() {
@@ -21,54 +20,47 @@ export function RoomNotFound() {
 	};
 
 	return (
-		<div class="min-h-screen flex flex-col items-center justify-center p-4 relative text-foreground">
-			<div class="absolute inset-0">
-				<div class="absolute inset-0 bg-grid-slate-300/[0.1] dark:bg-grid-slate-700/[0.1] bg-size-[40px_40px]" />
-				<div class="absolute inset-0 bg-linear-to-br from-primary/5 via-background to-secondary/5" />
-			</div>
+		<div class="h-screen w-full flex flex-col items-center justify-center p-4 bg-background text-foreground">
+			<div class="w-full max-w-lg space-y-8">
+				<div class="text-center space-y-4">
+					<h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-primary">
+						Room Not Found
+					</h1>
+					<p class="text-2xl font-serif text-muted-foreground">
+						This room doesn't exist or has expired
+					</p>
+				</div>
 
-			<div class="rounded-2xl max-w-md w-full space-y-8 relative z-10">
-				<h2 class="text-3xl font-bold text-center text-primary">
-					Room Not Found
-				</h2>
+				<div class="space-y-4">
+					<Button
+						onClick={() => navigate({ to: "/" })}
+						class="w-full h-11 text-base"
+					>
+						<House class="mr-2 size-5" />
+						Return to Home
+					</Button>
 
-				<Card class="border shadow-lg backdrop-blur-sm">
-					<CardContent class="space-y-4 pt-4">
-						<p class="text-lg mb-2 font-medium">Oops!</p>
-						<p class="text-base text-muted-foreground mb-4">
-							The room you're looking for doesn't exist or has expired.
-						</p>
-
-						<Button
-							onClick={() => navigate({ to: "/" })}
-							class="w-full h-12 text-base"
+					<Button
+						onClick={handleCreateRoom}
+						class="w-full h-11 text-base"
+						variant="outline"
+						disabled={isLoading()}
+					>
+						<Show
+							when={isLoading()}
+							fallback={
+								<>
+									<Wifi class="mr-2 size-5" />
+									Create New Lobby
+								</>
+							}
 						>
-							<House class="mr-2 size-5" />
-							Return to Home
-						</Button>
+							<Loader class="size-5 animate-spin" />
+						</Show>
+					</Button>
+				</div>
 
-						<Button
-							onClick={handleCreateRoom}
-							class="w-full h-12 text-base"
-							variant="outline"
-							disabled={isLoading()}
-						>
-							<Show
-								when={isLoading()}
-								fallback={
-									<>
-										<Wifi class="mr-2 size-5" />
-										Create New Lobby
-									</>
-								}
-							>
-								<Loader class="size-5 animate-spin" />
-							</Show>
-						</Button>
-					</CardContent>
-				</Card>
-
-				<p class="text-center text-sm text-muted-foreground mt-2">
+				<p class="text-center text-xs text-muted-foreground">
 					Need help? Try refreshing or creating a new room.
 				</p>
 			</div>

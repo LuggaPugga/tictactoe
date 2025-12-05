@@ -1,7 +1,6 @@
 import { makePersisted } from "@solid-primitives/storage";
 import { createFileRoute } from "@tanstack/solid-router";
 import { createSignal, onCleanup, Show } from "solid-js";
-import { Motion } from "solid-motionone";
 import { ContinueGameDialog } from "@/components/game/continue-game-dialog";
 import { Scoreboard } from "@/components/game/scoreboard";
 import UltimateBoard from "@/components/game/ultimate-board";
@@ -234,18 +233,13 @@ function LocalMultiplayer() {
 			<Show
 				when={current().status !== "waiting"}
 				fallback={
-					<Motion.div
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.5 }}
-						class="rounded-2xl shadow-xl p-8 max-w-md w-full space-y-8 relative z-10 border border-border/40"
-					>
-						<div class="text-center space-y-2">
-							<h1 class="text-3xl font-bold text-[#c1644d] dark:text-[#e07a5f]">
+					<div class="w-full max-w-lg space-y-8 relative z-10">
+						<div class="text-center space-y-4">
+							<h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-primary">
 								Local Multiplayer
 							</h1>
-							<p class="text-muted-foreground">
-								Enter player names to start the game
+							<p class="text-2xl font-serif text-muted-foreground">
+								Play with a friend on one device
 							</p>
 						</div>
 
@@ -261,7 +255,7 @@ function LocalMultiplayer() {
 									placeholder="Enter name"
 									value={playerName()}
 									onInput={(e) => setPlayerName(e.currentTarget.value)}
-									class="w-full rounded-md border-border/60 bg-input px-4 py-2 text-lg transition-colors focus-visible:ring-2 focus-visible:ring-[#e07a5f]/50"
+									class="h-11"
 									required
 								/>
 							</div>
@@ -275,19 +269,16 @@ function LocalMultiplayer() {
 									type="text"
 									name="player2"
 									placeholder="Enter name"
-									class="w-full rounded-md border-border/60 bg-input px-4 py-2 text-lg transition-colors focus-visible:ring-2 focus-visible:ring-[#e07a5f]/50"
+									class="h-11"
 									required
 								/>
 							</div>
 
-							<Button
-								type="submit"
-								class="w-full bg-[#c1644d] hover:bg-[#b15a44] dark:bg-[#e07a5f] dark:hover:bg-[#d0694e] text-white font-semibold py-3 px-4 rounded-md transition duration-200"
-							>
+							<Button type="submit" class="w-full h-11 text-base">
 								Start Game
 							</Button>
 						</form>
-					</Motion.div>
+					</div>
 				}
 			>
 				<div class="w-full max-w-7xl relative z-10">
