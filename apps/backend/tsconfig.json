@@ -1,8 +1,21 @@
 {
-	"extends": "@repo/typescript-config/base.json",
 	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"lib": ["ES2022"],
+		"moduleResolution": "bundler",
+		"strict": true,
+		"skipLibCheck": true,
+		"noEmit": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"forceConsistentCasingInFileNames": true,
+		"verbatimModuleSyntax": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
 		"outDir": "dist"
 	},
-	"include": ["src", "types.ts", "index.ts"],
+	"include": ["index.ts", "types.ts"],
 	"exclude": ["node_modules"]
 }
