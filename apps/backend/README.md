@@ -1,6 +1,13 @@
-# Tic Tac Toe - Backend
+# Ultimate Tic Tac Toe - Backend
 
-A real-time multiplayer Ultimate Tic-Tac-Toe game server using Socket.IO, Express, and Bun.
+A real-time multiplayer Ultimate Tic-Tac-Toe game server using Elysia with native WebSockets and Bun.
+
+## Tech Stack
+
+- **Framework**: Elysia
+- **Runtime**: Bun
+- **Real-time**: Native WebSockets
+- **Language**: TypeScript
 
 ## Features
 
@@ -21,6 +28,20 @@ Ultimate Tic-Tac-Toe is played on a 3x3 grid of 3x3 Tic-Tac-Toe boards.
 3.  If sent to a won/full board, player can play on any open cell.
 4.  Win a small board by getting three in a row.
 5.  Win the game by getting three small boards in a row.
+
+## Getting Started
+
+```bash
+bun install
+bun run dev
+```
+
+## Building For Production
+
+```bash
+bun run build
+bun run start
+```
 
 ## Environment Variables
 
@@ -44,7 +65,7 @@ POST /api/create-room
 }
 ```
 
-### Socket.IO Events
+### WebSocket Events
 
 #### Client to Server
 
@@ -75,10 +96,3 @@ POST /api/create-room
 - **gameReset**: Game reset.
 - **sessionCode**: Session code provided.
 - Error events: **roomNotFound**, **gameNotReady**, **notYourTurn**, **invalidMove**, etc.
-
-## Technical Details
-
-- **Socket.IO**: Real-time communication
-- **Express**: HTTP routing
-- **Node.js**: HTTP server
-- **TypeScript**: Type checking

@@ -12,12 +12,8 @@ The project contains:
 
 - **Applications**:
 
-  - `frontend`: Next.js application with the game UI
-  - `backend`: Socket.IO/Express server for real-time gameplay
-
-- **Shared Packages**:
-  - `@repo/eslint-config`: Shared ESLint configurations
-  - `@repo/typescript-config`: Shared TypeScript configurations
+  - `frontend`: TanStack Start with SolidJS application for the game UI
+  - `backend`: Elysia server with native WebSockets for real-time gameplay
 
 ## Features
 
@@ -41,37 +37,24 @@ To start working with this project:
 2. **Install dependencies**:
 
    ```sh
-   npm install
-   # or
    bun install
    ```
 
-3. **Set up environment variables**:
+3. **Run the development servers**:
 
    ```sh
-   # For the frontend
-   cp apps/frontend/.env.example apps/frontend/.env
-   ```
-
-4. **Run the development servers**:
-
-   ```sh
-   npm run dev
-   # or
    bun run dev
    ```
 
-5. **Build everything**:
+4. **Build everything**:
    ```sh
-   npm run build
-   # or
    bun run build
    ```
 
 ## Tech Stack
 
-- **Frontend**: Next.js, Socket.IO Client, Tailwind CSS, ShadcnUI
-- **Backend**: Express, Socket.IO, TypeScript, Bun
+- **Frontend**: TanStack Start, SolidJS, TanStack Router, Tailwind CSS, Solid-UI
+- **Backend**: Elysia, Native WebSockets, TypeScript, Bun
 
 For more detailed information about each application, please see the README files in their respective directories:
 
