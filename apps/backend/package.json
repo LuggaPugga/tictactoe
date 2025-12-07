@@ -9,18 +9,13 @@
 	},
 	"private": true,
 	"devDependencies": {
-		"@types/bun": "latest",
-		"@repo/typescript-config": "workspace:*"
+		"@types/bun": "latest"
 	},
 	"peerDependencies": {
 		"typescript": "^5"
 	},
 	"dependencies": {
-		"@types/cors": "^2.8.17",
-		"@types/express": "^5.0.1",
-		"@types/socket.io": "^3.0.2",
-		"cors": "^2.8.5",
-		"express": "^5.0.1",
-		"socket.io": "^4.8.1"
+		"@elysiajs/cors": "^1.4.0",
+		"elysia": "^1.4.18"
 	}
 }

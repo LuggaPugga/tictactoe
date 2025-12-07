@@ -1,46 +1,30 @@
-import http from "node:http";
-import cors from "cors";
-import express from "express";
-import { Server } from "socket.io";
-import type {
-	ClientToServerEvents,
-	GameRoom,
-	InterServerEvents,
-	QueuePlayer,
-	ServerToClientEvents,
-	SocketData,
-} from "./types";
-
-const app = express();
-const server = http.createServer(app);
-
-const corsOptions = {
-	origin: "*",
-	methods: ["GET", "POST", "OPTIONS"],
-	allowedHeaders: ["Content-Type", "Authorization"],
-	credentials: true,
-	optionsSuccessStatus: 200,
-};
-
-app.use(cors(corsOptions));
-
-const io = new Server<
-	ClientToServerEvents,
-	ServerToClientEvents,
-	InterServerEvents,
-	SocketData
->(server, {
-	cors: {
-		origin: "*",
-		methods: ["GET", "POST"],
-		allowedHeaders: ["Content-Type", "Authorization"],
-		credentials: true,
-	},
-});
+import { cors } from "@elysiajs/cors";
+import { Elysia, t } from "elysia";
+import type { GameRoom } from "./types";
 
 const rooms = new Map<string, GameRoom>();
+
+interface QueuePlayer {
+	sessionCode: string;
+	playerName: string;
+}
+
 const queue: QueuePlayer[] = [];
 const MAX_QUEUE_SIZE = 100;
+
+interface WebSocketData {
+	sessionCode: string;
+	roomCode: string | null;
+	inQueue: boolean;
+}
+
+type ElysiaWebSocket = {
+	send: (data: string) => void;
+	data: WebSocketData & Record<string, unknown>;
+};
+
+const sessionToWs = new Map<string, ElysiaWebSocket>();
+const roomSubscribers = new Map<string, Set<string>>();
 
 function checkWinner(board: (string | null)[]): string | null {
 	const winningCombos = [
@@ -75,7 +59,6 @@ function createRoom(): GameRoom {
 		currentBoard: null,
 		currentTurn: null,
 		scores: {},
-		sessionToSocket: new Map(),
 		winner: null,
 		status: "waiting",
 	};
@@ -87,49 +70,48 @@ function updateScores(
 	sessionCode: string,
 ): void {
 	if (winner === "tie") {
-		room.players.forEach((player) => room.scores[player.sessionCode].ties++);
-	} else {
-		const winningPlayer = room.players.find(
-			(player) => player.sessionCode === sessionCode,
-		);
-		const losingPlayer = room.players.find(
-			(player) => player.sessionCode !== sessionCode,
-		);
-		if (winningPlayer && losingPlayer) {
-			room.scores[winningPlayer.sessionCode].wins++;
-			room.scores[losingPlayer.sessionCode].losses++;
+		for (const p of room.players) {
+			room.scores[p.sessionCode].ties++;
 		}
+	} else {
+		const [winnerIdx, loserIdx] =
+			room.players[0].sessionCode === sessionCode ? [0, 1] : [1, 0];
+		room.scores[room.players[winnerIdx].sessionCode].wins++;
+		room.scores[room.players[loserIdx].sessionCode].losses++;
 	}
 }
 
-function updateQueuePositions(): void {
-	queue.forEach((player, index) => {
-		player.socket.emit("queueUpdate", { position: index + 1 });
+function broadcast(roomCode: string, message: object) {
+	roomSubscribers.get(roomCode)?.forEach((sessionCode) => {
+		const ws = sessionToWs.get(sessionCode);
+		if (ws) {
+			try {
+				ws.send(JSON.stringify(message));
+			} catch {}
+		}
 	});
 }
 
-function createLobby(player1: QueuePlayer, player2: QueuePlayer): void {
-	const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-	const room = createRoom();
-	rooms.set(roomCode, room);
-	[player1, player2].forEach((player) => {
-		const sessionCode = Math.random().toString(36).substring(2, 15);
-		room.players.push({
-			sessionCode,
-			name: player.playerName,
-			connected: true,
-		});
-		room.scores[sessionCode] = { wins: 0, losses: 0, ties: 0 };
-		room.sessionToSocket.set(sessionCode, player.socket.id);
-
-		player.socket.join(roomCode);
-		player.socket.emit("lobbyCreated", { roomCode, sessionCode });
+function updateQueuePositions() {
+	queue.forEach((p, i) => {
+		sessionToWs
+			.get(p.sessionCode)
+			?.send(JSON.stringify({ type: "queueUpdate", position: i + 1 }));
 	});
+}
 
-	room.currentTurn = room.players[0].sessionCode;
-	room.status = "playing";
+function removeFromQueue(sessionCode: string) {
+	const index = queue.findIndex((p) => p.sessionCode === sessionCode);
+	if (index !== -1) {
+		queue.splice(index, 1);
+		updateQueuePositions();
+		return true;
+	}
+	return false;
+}
 
-	io.to(roomCode).emit("gameStart", {
+function getGameState(room: GameRoom) {
+	return {
 		players: room.players,
 		game: room.game,
 		globalBoard: room.globalBoard,
@@ -138,384 +120,432 @@ function createLobby(player1: QueuePlayer, player2: QueuePlayer): void {
 		scores: room.scores,
 		status: room.status,
 		spectators: room.spectators,
-	});
+		...(room.winner && { winner: room.winner }),
+	};
 }
 
-io.on("connection", (socket) => {
-	socket.inQueue = false;
-	socket.roomCode = null;
+function reconnectPlayer(
+	ws: ElysiaWebSocket,
+	room: GameRoom,
+	roomCode: string,
+	sessionCode: string,
+	currentSessionCode: string,
+) {
+	const player = room.players.find((p) => p.sessionCode === sessionCode);
+	if (!player) return false;
 
-	socket.on("joinQueue", ({ playerName }) => {
-		if (socket.inQueue) {
-			const index = queue.findIndex((player) => player.socket === socket);
-			if (index !== -1) {
-				queue.splice(index, 1);
-				updateQueuePositions();
-			}
-		}
+	player.connected = true;
+	sessionToWs.delete(currentSessionCode);
+	(ws.data as unknown as WebSocketData).sessionCode = sessionCode;
+	sessionToWs.set(sessionCode, ws);
+	(ws.data as unknown as WebSocketData).roomCode = roomCode;
+	subscribeToRoom(roomCode, sessionCode);
 
-		let isInActiveRoom = false;
-		if (socket.roomCode) {
-			const room = rooms.get(socket.roomCode);
-			if (
-				room?.players.some(
-					(p) => room.sessionToSocket.get(p.sessionCode) === socket.id,
-				)
-			) {
-				isInActiveRoom = true;
-			} else {
-				socket.roomCode = null;
-			}
-		}
+	ws.send(JSON.stringify({ type: "reconnected", ...getGameState(room) }));
+	broadcast(roomCode, { type: "playerReconnected", sessionCode });
+	return true;
+}
 
-		if (!isInActiveRoom) {
-			socket.inQueue = true;
-			if (queue.length >= MAX_QUEUE_SIZE) {
-				socket.emit("queueFull");
-				socket.inQueue = false;
-				return;
-			}
+function subscribeToRoom(roomCode: string, sessionCode: string) {
+	if (!roomSubscribers.has(roomCode)) {
+		roomSubscribers.set(roomCode, new Set());
+	}
+	roomSubscribers.get(roomCode)?.add(sessionCode);
+}
 
-			const player: QueuePlayer = { socket, playerName };
-			queue.push(player);
-			socket.emit("joinedQueue", { position: queue.length });
-			updateQueuePositions();
+function unsubscribeFromRoom(roomCode: string, sessionCode: string) {
+	roomSubscribers.get(roomCode)?.delete(sessionCode);
+}
 
-			if (queue.length >= 2) {
-				const player1 = queue.shift();
-				const player2 = queue.shift();
-				if (player1 && player2) {
-					player1.socket.inQueue = false;
-					player2.socket.inQueue = false;
-					createLobby(player1, player2);
+function generateSessionCode(): string {
+	return Math.random().toString(36).substring(2, 15);
+}
+
+function generateRoomCode(): string {
+	return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+const app = new Elysia()
+	.use(cors())
+	.post("/api/create-room", () => {
+		const roomCode = generateRoomCode();
+		rooms.set(roomCode, createRoom());
+		return { roomCode };
+	})
+	.ws("/game", {
+		body: t.Object({
+			type: t.String(),
+			roomCode: t.Optional(t.String()),
+			playerName: t.Optional(t.String()),
+			sessionCode: t.Optional(t.String()),
+			asSpectator: t.Optional(t.Boolean()),
+			boardIndex: t.Optional(t.Number()),
+			cellIndex: t.Optional(t.Number()),
+		}),
+		open(ws) {
+			const sessionCode = generateSessionCode();
+			const wsData = ws.data as unknown as WebSocketData;
+			wsData.sessionCode = sessionCode;
+			wsData.roomCode = null;
+			wsData.inQueue = false;
+			sessionToWs.set(sessionCode, ws as unknown as ElysiaWebSocket);
+
+			ws.send(
+				JSON.stringify({
+					type: "connected",
+					sessionCode,
+				}),
+			);
+		},
+		message(ws, data) {
+			const { type } = data;
+			const wsData = ws.data as unknown as WebSocketData;
+			const currentSessionCode = wsData.sessionCode;
+
+			switch (type) {
+				case "joinQueue": {
+					const { playerName } = data;
+					if (!playerName) return;
+
+					if (wsData.inQueue) removeFromQueue(currentSessionCode);
+
+					wsData.inQueue = true;
+					if (queue.length >= MAX_QUEUE_SIZE) {
+						ws.send(JSON.stringify({ type: "queueFull" }));
+						wsData.inQueue = false;
+						return;
+					}
+
+					queue.push({ sessionCode: currentSessionCode, playerName });
+					ws.send(
+						JSON.stringify({ type: "joinedQueue", position: queue.length }),
+					);
 					updateQueuePositions();
+
+					if (queue.length >= 2) {
+						const player1 = queue.shift();
+						const player2 = queue.shift();
+						if (!player1 || !player2) break;
+						const roomCode = generateRoomCode();
+						const room = createRoom();
+						rooms.set(roomCode, room);
+
+						[player1, player2].forEach((player) => {
+							room.players.push({
+								sessionCode: player.sessionCode,
+								name: player.playerName,
+								connected: true,
+							});
+							room.scores[player.sessionCode] = { wins: 0, losses: 0, ties: 0 };
+							subscribeToRoom(roomCode, player.sessionCode);
+
+							const pWs = sessionToWs.get(player.sessionCode);
+							if (pWs) {
+								const pWsData = pWs.data as unknown as WebSocketData;
+								pWsData.roomCode = roomCode;
+								pWsData.inQueue = false;
+								pWs.send(JSON.stringify({ type: "leftQueue" }));
+								pWs.send(
+									JSON.stringify({
+										type: "lobbyCreated",
+										roomCode,
+										sessionCode: player.sessionCode,
+									}),
+								);
+							}
+						});
+
+						room.currentTurn = room.players[0].sessionCode;
+						room.status = "playing";
+						broadcast(roomCode, { type: "gameStart", ...getGameState(room) });
+						updateQueuePositions();
+					}
+					break;
 				}
-			}
-		} else {
-			socket.emit("alreadyInQueueOrGame");
-		}
-	});
 
-	socket.on("leaveQueue", () => {
-		if (socket.inQueue) {
-			const index = queue.findIndex((player) => player.socket === socket);
-			if (index !== -1) {
-				queue.splice(index, 1);
-				socket.emit("leftQueue");
-				updateQueuePositions();
-			}
-			socket.inQueue = false;
-		}
-	});
-
-	socket.on(
-		"joinRoom",
-		({ roomCode, playerName, sessionCode, asSpectator }) => {
-			if (socket.inQueue) {
-				const index = queue.findIndex((player) => player.socket === socket);
-				if (index !== -1) {
-					queue.splice(index, 1);
-					socket.emit("leftQueue");
-					updateQueuePositions();
+				case "leaveQueue": {
+					if (wsData.inQueue && removeFromQueue(currentSessionCode)) {
+						ws.send(JSON.stringify({ type: "leftQueue" }));
+					}
+					wsData.inQueue = false;
+					break;
 				}
-				socket.inQueue = false;
-			}
-			const room = rooms.get(roomCode);
-			if (!room) {
-				socket.emit("roomNotFound");
-				return;
-			}
 
-			if (
-				sessionCode &&
-				room.players.some((p) => p.sessionCode === sessionCode)
-			) {
-				const player = room.players.find((p) => p.sessionCode === sessionCode);
-				if (player) {
-					player.connected = true;
-					room.sessionToSocket.set(sessionCode, socket.id);
-					socket.join(roomCode);
-					socket.roomCode = roomCode;
-					socket.emit("reconnected", {
-						players: room.players,
+				case "joinRoom": {
+					const {
+						roomCode,
+						playerName,
+						sessionCode: providedSessionCode,
+						asSpectator,
+					} = data;
+					if (!roomCode || !playerName) return;
+
+					if (wsData.inQueue) {
+						removeFromQueue(currentSessionCode);
+						ws.send(JSON.stringify({ type: "leftQueue" }));
+						wsData.inQueue = false;
+					}
+
+					const room = rooms.get(roomCode);
+					if (!room) {
+						ws.send(JSON.stringify({ type: "roomNotFound" }));
+						return;
+					}
+
+					if (
+						providedSessionCode &&
+						room.players.some((p) => p.sessionCode === providedSessionCode)
+					) {
+						if (
+							reconnectPlayer(
+								ws as unknown as ElysiaWebSocket,
+								room,
+								roomCode,
+								providedSessionCode,
+								currentSessionCode,
+							)
+						) {
+							return;
+						}
+					}
+
+					if (asSpectator || room.players.length >= 2) {
+						room.spectators.push({
+							sessionCode: currentSessionCode,
+							name: playerName,
+						});
+						wsData.roomCode = roomCode;
+						subscribeToRoom(roomCode, currentSessionCode);
+
+						ws.send(
+							JSON.stringify({
+								type: "joinedAsSpectator",
+								sessionCode: currentSessionCode,
+								...getGameState(room),
+							}),
+						);
+						broadcast(roomCode, {
+							type: "spectatorJoined",
+							name: playerName,
+							spectators: room.spectators,
+						});
+						return;
+					}
+
+					room.players.push({
+						sessionCode: currentSessionCode,
+						name: playerName,
+						connected: true,
+					});
+					room.scores[currentSessionCode] = { wins: 0, losses: 0, ties: 0 };
+					wsData.roomCode = roomCode;
+					subscribeToRoom(roomCode, currentSessionCode);
+
+					ws.send(
+						JSON.stringify({
+							type: "sessionCode",
+							sessionCode: currentSessionCode,
+						}),
+					);
+
+					if (room.players.filter((p) => p.connected).length === 2) {
+						room.currentTurn ??= room.players[0].sessionCode;
+						room.status = "playing";
+						broadcast(roomCode, { type: "gameStart", ...getGameState(room) });
+					} else {
+						ws.send(
+							JSON.stringify({
+								type: "waitingForOpponent",
+								sessionCode: currentSessionCode,
+								status: room.status,
+							}),
+						);
+					}
+					break;
+				}
+
+				case "makeMove": {
+					const { roomCode, boardIndex, cellIndex, sessionCode } = data;
+					if (
+						roomCode === undefined ||
+						boardIndex === undefined ||
+						cellIndex === undefined ||
+						!sessionCode
+					)
+						return;
+
+					const room = rooms.get(roomCode);
+					if (
+						!room ||
+						room.players.filter((p) => p.connected).length !== 2 ||
+						room.currentTurn === null
+					) {
+						ws.send(JSON.stringify({ type: "gameNotReady" }));
+						return;
+					}
+
+					if (checkWinner(room.globalBoard)) {
+						ws.send(JSON.stringify({ type: "gameAlreadyOver" }));
+						return;
+					}
+
+					if (room.currentTurn !== sessionCode) {
+						ws.send(JSON.stringify({ type: "notYourTurn" }));
+						return;
+					}
+
+					const currentPlayerIndex = room.players.findIndex(
+						(p) => p.sessionCode === sessionCode,
+					);
+					if (
+						currentPlayerIndex === -1 ||
+						room.game[boardIndex][cellIndex] !== null
+					) {
+						ws.send(JSON.stringify({ type: "invalidMove" }));
+						return;
+					}
+
+					if (room.currentBoard !== null && room.currentBoard !== boardIndex) {
+						ws.send(JSON.stringify({ type: "invalidMove" }));
+						return;
+					}
+
+					room.game[boardIndex][cellIndex] =
+						currentPlayerIndex === 0 ? "X" : "O";
+
+					const localWinner = checkWinner(room.game[boardIndex]);
+					if (localWinner) {
+						room.globalBoard[boardIndex] =
+							localWinner === "tie" ? null : localWinner;
+					}
+
+					const globalWinner = checkWinner(room.globalBoard);
+					if (!globalWinner) {
+						room.currentTurn =
+							room.players[(currentPlayerIndex + 1) % 2].sessionCode;
+					}
+
+					room.currentBoard =
+						room.game[cellIndex].every((cell) => cell !== null) ||
+						room.globalBoard[cellIndex]
+							? null
+							: cellIndex;
+
+					const gameUpdate = {
+						type: "updateGame" as const,
 						game: room.game,
 						globalBoard: room.globalBoard,
 						currentBoard: room.currentBoard,
 						currentTurn: room.currentTurn,
 						scores: room.scores,
-						winner: room.winner,
-						status: room.status,
 						spectators: room.spectators,
-					});
-					socket.to(roomCode).emit("playerReconnected", sessionCode);
-					return;
+					};
+
+					if (globalWinner) {
+						updateScores(room, globalWinner, sessionCode);
+						room.winner = sessionCode;
+						broadcast(roomCode, {
+							type: "gameOver",
+							winner: sessionCode,
+							scores: room.scores,
+						});
+						broadcast(roomCode, { ...gameUpdate, winner: sessionCode });
+					} else {
+						broadcast(roomCode, gameUpdate);
+					}
+					break;
 				}
-			}
 
-			const newSessionCode =
-				sessionCode || Math.random().toString(36).substring(2, 15);
-			let player = room.players.find((p) => p.sessionCode === newSessionCode);
-
-			if (player) {
-				player.name = playerName;
-				player.connected = true;
-			} else if (asSpectator || room.players.length >= 2) {
-				const spectator = { sessionCode: newSessionCode, name: playerName };
-				room.spectators.push(spectator);
-				room.sessionToSocket.set(newSessionCode, socket.id);
-				socket.join(roomCode);
-				socket.roomCode = roomCode;
-				socket.emit("joinedAsSpectator", {
-					sessionCode: newSessionCode,
-					players: room.players,
-					game: room.game,
-					globalBoard: room.globalBoard,
-					currentBoard: room.currentBoard,
-					currentTurn: room.currentTurn,
-					scores: room.scores,
-					status: room.status,
-					spectators: room.spectators,
-				});
-				io.to(roomCode).emit("spectatorJoined", {
-					name: playerName,
-					spectators: room.spectators,
-				});
-				return;
-			} else {
-				player = {
-					sessionCode: newSessionCode,
-					name: playerName,
-					connected: true,
-				};
-				room.players.push(player);
-				room.scores[newSessionCode] = { wins: 0, losses: 0, ties: 0 };
-			}
-
-			room.sessionToSocket.set(newSessionCode, socket.id);
-			socket.join(roomCode);
-			socket.roomCode = roomCode;
-			socket.emit("sessionCode", newSessionCode);
-
-			if (room.players.filter((p) => p.connected).length === 2) {
-				if (room.currentTurn === null) {
-					room.currentTurn = room.players[0].sessionCode;
+				case "requestGameReset": {
+					const { roomCode } = data;
+					if (!roomCode) break;
+					const room = rooms.get(roomCode);
+					if (room && room.winner !== null) {
+						room.game = Array.from({ length: 9 }, () => Array(9).fill(null));
+						room.globalBoard = Array(9).fill(null);
+						room.currentBoard = null;
+						room.currentTurn = room.players[0].sessionCode;
+						room.winner = null;
+						room.status =
+							room.players.filter((p) => p.connected).length === 2
+								? "playing"
+								: "waiting";
+						broadcast(roomCode, {
+							type: "gameReset",
+							...getGameState(room),
+							winner: null,
+						});
+					}
+					break;
 				}
-				room.status = "playing";
-				io.to(roomCode).emit("gameStart", {
-					players: room.players,
-					game: room.game,
-					globalBoard: room.globalBoard,
-					currentBoard: room.currentBoard,
-					currentTurn: room.currentTurn,
-					scores: room.scores,
-					status: room.status,
-					spectators: room.spectators,
-				});
-			} else {
-				socket.emit("waitingForOpponent", {
-					sessionCode: player.sessionCode,
-					status: room.status,
-				});
+
+				case "reconnect": {
+					const { roomCode, sessionCode } = data;
+					if (!roomCode || !sessionCode) break;
+					const room = rooms.get(roomCode);
+					if (room) {
+						reconnectPlayer(
+							ws as unknown as ElysiaWebSocket,
+							room,
+							roomCode,
+							sessionCode,
+							currentSessionCode,
+						);
+					}
+					break;
+				}
 			}
 		},
-	);
+		close(ws) {
+			const wsData = ws.data as unknown as WebSocketData;
+			const { sessionCode, roomCode } = wsData;
 
-	socket.on("makeMove", ({ roomCode, boardIndex, cellIndex, sessionCode }) => {
-		const room = rooms.get(roomCode);
-		if (
-			!room ||
-			room.players.filter((p) => p.connected).length !== 2 ||
-			room.currentTurn === null
-		) {
-			socket.emit("gameNotReady");
-			return;
-		}
-
-		if (checkWinner(room.globalBoard)) {
-			socket.emit("gameAlreadyOver");
-			return;
-		}
-
-		if (room.currentTurn !== sessionCode) {
-			socket.emit("notYourTurn");
-			return;
-		}
-
-		const currentPlayerIndex = room.players.findIndex(
-			(player) => player.sessionCode === sessionCode,
-		);
-		if (
-			currentPlayerIndex === -1 ||
-			room.game[boardIndex][cellIndex] !== null
-		) {
-			socket.emit("invalidMove");
-			return;
-		}
-
-		if (room.currentBoard !== null && room.currentBoard !== boardIndex) {
-			socket.emit("invalidMove");
-			return;
-		}
-
-		room.game[boardIndex][cellIndex] = currentPlayerIndex === 0 ? "X" : "O";
-
-		const localWinner = checkWinner(room.game[boardIndex]);
-		if (localWinner) {
-			room.globalBoard[boardIndex] = localWinner === "tie" ? null : localWinner;
-		}
-
-		const globalWinner = checkWinner(room.globalBoard);
-
-		if (!globalWinner) {
-			room.currentTurn = room.players[(currentPlayerIndex + 1) % 2].sessionCode;
-		}
-		room.currentBoard =
-			room.game[cellIndex].every((cell) => cell !== null) ||
-			room.globalBoard[cellIndex]
-				? null
-				: cellIndex;
-
-		io.to(roomCode).emit("updateGame", {
-			game: room.game,
-			globalBoard: room.globalBoard,
-			currentBoard: room.currentBoard,
-			currentTurn: room.currentTurn,
-			scores: room.scores,
-			spectators: room.spectators,
-		});
-
-		if (globalWinner) {
-			updateScores(room, globalWinner, sessionCode);
-			room.winner = sessionCode;
-			io.to(roomCode).emit("gameOver", {
-				winner: sessionCode,
-				scores: room.scores,
-			});
-			io.to(roomCode).emit("updateGame", {
-				game: room.game,
-				globalBoard: room.globalBoard,
-				currentBoard: room.currentBoard,
-				currentTurn: room.currentTurn,
-				scores: room.scores,
-				winner: sessionCode,
-				spectators: room.spectators,
-			});
-		}
-	});
-
-	socket.on("requestGameReset", (roomCode) => {
-		const room = rooms.get(roomCode);
-		if (room && room.winner !== null) {
-			room.game = Array(9)
-				.fill(null)
-				.map(() => Array(9).fill(null));
-			room.globalBoard = Array(9).fill(null);
-			room.currentBoard = null;
-			room.currentTurn = room.players[0].sessionCode;
-			room.winner = null;
-			const connectedPlayers = room.players.filter((p) => p.connected).length;
-			room.status = connectedPlayers === 2 ? "playing" : "waiting";
-			io.to(roomCode).emit("gameReset", {
-				game: room.game,
-				globalBoard: room.globalBoard,
-				currentBoard: room.currentBoard,
-				currentTurn: room.currentTurn,
-				scores: room.scores,
-				winner: null,
-				status: room.status,
-				spectators: room.spectators,
-			});
-		}
-	});
-
-	socket.on("disconnect", () => {
-		if (socket.inQueue) {
-			const index = queue.findIndex((player) => player.socket === socket);
-			if (index !== -1) {
-				queue.splice(index, 1);
-				updateQueuePositions();
+			if (wsData.inQueue) {
+				removeFromQueue(sessionCode);
 			}
-			socket.inQueue = false;
-		}
 
-		for (const [roomCode, room] of rooms.entries()) {
-			const disconnectedSessionCode = Array.from(
-				room.sessionToSocket.entries(),
-			).find(([, socketId]) => socketId === socket.id)?.[0];
-
-			if (disconnectedSessionCode) {
-				const disconnectedPlayer = room.players.find(
-					(player) => player.sessionCode === disconnectedSessionCode,
-				);
-				const disconnectedSpectator = room.spectators.find(
-					(spectator) => spectator.sessionCode === disconnectedSessionCode,
-				);
-
-				if (disconnectedPlayer) {
-					disconnectedPlayer.connected = false;
-					io.to(roomCode).emit("playerDisconnected", disconnectedSessionCode);
-
-					setTimeout(() => {
-						if (!disconnectedPlayer.connected) {
-							room.players = room.players.filter((p) => p.connected);
-							room.sessionToSocket.delete(disconnectedSessionCode);
-							if (room.players.length === 0 && room.spectators.length === 0) {
-								rooms.delete(roomCode);
-								console.log("Room deleted:", roomCode);
-							}
-						}
-					}, 60000);
-				} else if (disconnectedSpectator) {
-					room.spectators = room.spectators.filter(
-						(s) => s.sessionCode !== disconnectedSessionCode,
+			if (roomCode) {
+				const room = rooms.get(roomCode);
+				if (room) {
+					const player = room.players.find(
+						(p) => p.sessionCode === sessionCode,
 					);
-					room.sessionToSocket.delete(disconnectedSessionCode);
-					io.to(roomCode).emit("spectatorLeft", {
-						sessionCode: disconnectedSessionCode,
-						spectators: room.spectators,
-					});
+					const spectator = room.spectators.find(
+						(s) => s.sessionCode === sessionCode,
+					);
+
+					if (player) {
+						player.connected = false;
+						broadcast(roomCode, { type: "playerDisconnected", sessionCode });
+						setTimeout(() => {
+							if (!player.connected) {
+								room.players = room.players.filter((p) => p.connected);
+								unsubscribeFromRoom(roomCode, sessionCode);
+								if (room.players.length === 0 && room.spectators.length === 0) {
+									rooms.delete(roomCode);
+									roomSubscribers.delete(roomCode);
+								}
+							}
+						}, 60000);
+					} else if (spectator) {
+						room.spectators = room.spectators.filter(
+							(s) => s.sessionCode !== sessionCode,
+						);
+						unsubscribeFromRoom(roomCode, sessionCode);
+						broadcast(roomCode, {
+							type: "spectatorLeft",
+							sessionCode,
+							spectators: room.spectators,
+						});
+					}
 				}
-				break;
 			}
-		}
 
-		socket.roomCode = null;
-	});
+			sessionToWs.delete(sessionCode);
+		},
+	})
+	.listen(process.env.PORT || 5000);
 
-	socket.on("reconnect", ({ roomCode, sessionCode }) => {
-		const room = rooms.get(roomCode);
-		if (room) {
-			const player = room.players.find((p) => p.sessionCode === sessionCode);
-			if (player) {
-				player.connected = true;
-				room.sessionToSocket.set(sessionCode, socket.id);
-				socket.join(roomCode);
-				socket.emit("reconnected", {
-					players: room.players,
-					game: room.game,
-					globalBoard: room.globalBoard,
-					currentBoard: room.currentBoard,
-					currentTurn: room.currentTurn,
-					scores: room.scores,
-					winner: room.winner,
-					status: room.status,
-					spectators: room.spectators,
-				});
-			}
-		}
-	});
-});
+console.log(`🦊 Server running at ${app.server?.hostname}:${app.server?.port}`);
 
-app.post("/api/create-room", async (_req, res) => {
-	try {
-		const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-		rooms.set(roomCode, createRoom());
-		res.json({ roomCode });
-	} catch (error) {
-		console.error("Error creating room:", error);
-		res.status(500).json({ error: "Internal server error" });
-	}
-});
-
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+export type App = typeof app;

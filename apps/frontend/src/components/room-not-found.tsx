@@ -1,82 +1,69 @@
-"use client";
-
-import { motion } from "framer-motion";
-import { Home, Loader2, Wifi } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useNavigate } from "@tanstack/solid-router";
+import { House, Loader, Wifi } from "lucide-solid";
+import { createSignal, Show } from "solid-js";
+import { toast } from "solid-sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { createRoom } from "@/utils/create-room";
+import { createRoom } from "@/lib/ws-client";
 
 export function RoomNotFound() {
-	const [isLoading, setIsLoading] = useState(false);
-	const router = useRouter();
+	const [isLoading, setIsLoading] = createSignal(false);
+	const navigate = useNavigate();
 
 	const handleCreateRoom = async () => {
 		setIsLoading(true);
-		await createRoom()
-			.then((roomCode) =>
-				roomCode
-					? router.push(`/game/${roomCode}`)
-					: alert("Failed to create room"),
-			)
-			.finally(() => setIsLoading(false));
+		const roomCode = await createRoom();
+		if (roomCode) {
+			navigate({ to: `/game/${roomCode}` });
+		} else {
+			toast.error("Failed to create room");
+		}
+		setIsLoading(false);
 	};
 
 	return (
-		<div className="min-h-screen flex flex-col items-center justify-center p-4 relative text-foreground">
-			<div className="absolute inset-0">
-				<div className="absolute inset-0 bg-grid-slate-300/[0.1] dark:bg-grid-slate-700/[0.1] bg-[size:40px_40px]" />
-				<div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
-			</div>
+		<div class="h-screen w-full flex flex-col items-center justify-center p-4 bg-background text-foreground">
+			<div class="w-full max-w-lg space-y-8">
+				<div class="text-center space-y-4">
+					<h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-primary">
+						Room Not Found
+					</h1>
+					<p class="text-2xl font-serif text-muted-foreground">
+						This room doesn't exist or has expired
+					</p>
+				</div>
 
-			<div className="rounded-2xl max-w-md w-full space-y-8 relative z-10">
-				<h2 className="text-3xl font-bold text-center text-primary">
-					Room Not Found
-				</h2>
+				<div class="space-y-4">
+					<Button
+						onClick={() => navigate({ to: "/" })}
+						class="w-full h-11 text-base"
+					>
+						<House class="mr-2 size-5" />
+						Return to Home
+					</Button>
 
-				<Card className="border shadow-lg backdrop-blur-sm">
-					<CardContent className="space-y-4 pt-4">
-						<p className="text-lg mb-2 font-medium">Oops!</p>
-						<p className="text-base text-muted-foreground mb-4">
-							The room you&apos;re looking for doesn&apos;t exist or has
-							expired.
-						</p>
-
-						<Button
-							onClick={() => router.push("/")}
-							className="w-full h-12 text-base"
-						>
-							<Home className="mr-2 size-5" />
-							Return to Home
-						</Button>
-
-						<Button
-							onClick={handleCreateRoom}
-							className="w-full h-12 text-base"
-							variant="outline"
-							disabled={isLoading}
-						>
-							{isLoading ? (
-								<Loader2 className="size-5 animate-spin" />
-							) : (
+					<Button
+						onClick={handleCreateRoom}
+						class="w-full h-11 text-base"
+						variant="outline"
+						disabled={isLoading()}
+					>
+						<Show
+							when={isLoading()}
+							fallback={
 								<>
-									<Wifi className="mr-2 size-5" />
+									<Wifi class="mr-2 size-5" />
 									Create New Lobby
 								</>
-							)}
-						</Button>
-					</CardContent>
-				</Card>
+							}
+						>
+							<Loader class="size-5 animate-spin" />
+						</Show>
+					</Button>
+				</div>
 
-				<motion.p
-					className="text-center text-sm text-muted-foreground mt-2"
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					transition={{ delay: 0.8 }}
-				>
+				<p class="text-center text-xs text-muted-foreground">
 					Need help? Try refreshing or creating a new room.
-				</motion.p>
+				</p>
 			</div>
 		</div>
 	);

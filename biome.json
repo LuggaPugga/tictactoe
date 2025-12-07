@@ -6,7 +6,8 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": ["**", "!apps/frontend/src/routeTree.gen.ts"]
 	},
 	"formatter": {
 		"enabled": true,
@@ -16,11 +17,20 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true
+		},
+		"domains": {
+			"react": "none",
+			"solid": "recommended"
 		}
 	},
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"
+		}
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
 		}
 	},
 	"assist": {
