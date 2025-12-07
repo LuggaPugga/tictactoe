@@ -155,7 +155,10 @@ function LocalMultiplayer() {
 				onNewGame={handleNewGame}
 			/>
 
-			<WinnerAnimation isVisible={showAnimation()} winner={store.getWinnerName()} />
+			<WinnerAnimation
+				isVisible={showAnimation()}
+				winner={store.getWinnerName()}
+			/>
 		</div>
 	);
 }
