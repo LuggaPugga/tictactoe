@@ -214,7 +214,7 @@ function Home() {
 									prop:value={name()}
 									onInput={(e) => setName(e.currentTarget.value)}
 									class="h-11"
-									disabled={inQueue()}
+									prop:disabled={inQueue()}
 								/>
 
 								<div class="grid gap-4">
@@ -227,7 +227,7 @@ function Home() {
 												? "bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
 												: ""
 										}`}
-										disabled={!hasName() || isLoading()}
+										prop:disabled={!hasName() || isLoading()}
 									>
 										<Show
 											when={inQueue()}
@@ -247,7 +247,7 @@ function Home() {
 										onClick={handleCreateRoom}
 										class="w-full h-11 text-base"
 										variant="outline"
-										disabled={!hasName() || isLoading() || inQueue()}
+										prop:disabled={!hasName() || isLoading() || inQueue()}
 									>
 										<Wifi class="mr-2 h-5 w-5" />
 										Create Private Room
@@ -257,7 +257,7 @@ function Home() {
 										onClick={() => setIsJoining(true)}
 										class="w-full h-11 text-base"
 										variant="outline"
-										disabled={!hasName() || inQueue()}
+										prop:disabled={!hasName() || inQueue()}
 									>
 										<Wifi class="mr-2 h-5 w-5" />
 										Join Private Room
@@ -289,7 +289,7 @@ function Home() {
 													size="icon"
 													class="absolute right-0 top-0 h-11 w-11"
 													onClick={() => setIsJoining(false)}
-													disabled={inQueue()}
+													prop:disabled={inQueue()}
 												>
 													<X class="h-4 w-4" />
 												</Button>
@@ -297,7 +297,7 @@ function Home() {
 											<Button
 												onClick={handleJoinRoom}
 												class="w-full h-11 text-base"
-												disabled={!hasName() || !roomCode() || inQueue()}
+												prop:disabled={!hasName() || !roomCode() || inQueue()}
 											>
 												Join Room
 											</Button>
@@ -313,14 +313,14 @@ function Home() {
 									prop:value={name()}
 									onInput={(e) => setName(e.currentTarget.value)}
 									class="h-11"
-									disabled={inQueue()}
+									prop:disabled={inQueue()}
 								/>
 
 								<div class="grid gap-4">
 									<Button
 										onClick={handleLocalMultiplayer}
 										class="w-full h-11 text-base"
-										disabled={!hasName() || inQueue()}
+										prop:disabled={!hasName() || inQueue()}
 									>
 										<Users class="mr-2 h-5 w-5" />
 										Play with a Friend
@@ -331,7 +331,7 @@ function Home() {
 											<Button
 												class="w-full h-11 text-base pointer-events-none opacity-50"
 												variant="outline"
-												disabled
+												prop:disabled={true}
 											>
 												<Robot class="mr-2 h-5 w-5" />
 												Play Against AI
