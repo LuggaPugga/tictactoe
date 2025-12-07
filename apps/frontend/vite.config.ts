@@ -3,6 +3,7 @@ import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/solid-start/plugin/vite";
 import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
+import lucidePreprocess from "vite-plugin-lucide-preprocess";
 import solidPlugin from "vite-plugin-solid";
 
 export default defineConfig({
@@ -26,6 +27,7 @@ export default defineConfig({
 		},
 	},
 	plugins: [
+		lucidePreprocess(),
 		devtools(),
 		nitro(),
 		tanstackStart(),
