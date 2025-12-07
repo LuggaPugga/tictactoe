@@ -1,6 +1,6 @@
 import { cors } from "@elysiajs/cors";
 import { Elysia, t } from "elysia";
-import type { GameRoom, Spectator } from "./types";
+import type { GameRoom } from "./types";
 
 const rooms = new Map<string, GameRoom>();
 
@@ -70,35 +70,80 @@ function updateScores(
 	sessionCode: string,
 ): void {
 	if (winner === "tie") {
-		for (const player of room.players) {
-			room.scores[player.sessionCode].ties++;
+		for (const p of room.players) {
+			room.scores[p.sessionCode].ties++;
 		}
 	} else {
-		const winningPlayer = room.players.find(
-			(player) => player.sessionCode === sessionCode,
-		);
-		const losingPlayer = room.players.find(
-			(player) => player.sessionCode !== sessionCode,
-		);
-		if (winningPlayer && losingPlayer) {
-			room.scores[winningPlayer.sessionCode].wins++;
-			room.scores[losingPlayer.sessionCode].losses++;
-		}
+		const [winnerIdx, loserIdx] =
+			room.players[0].sessionCode === sessionCode ? [0, 1] : [1, 0];
+		room.scores[room.players[winnerIdx].sessionCode].wins++;
+		room.scores[room.players[loserIdx].sessionCode].losses++;
 	}
 }
 
 function broadcast(roomCode: string, message: object) {
-	const subscribers = roomSubscribers.get(roomCode);
-	if (!subscribers) return;
-
-	for (const sessionCode of subscribers) {
+	roomSubscribers.get(roomCode)?.forEach((sessionCode) => {
 		const ws = sessionToWs.get(sessionCode);
 		if (ws) {
 			try {
 				ws.send(JSON.stringify(message));
-			} catch (_e) {}
+			} catch {}
 		}
+	});
+}
+
+function updateQueuePositions() {
+	queue.forEach((p, i) => {
+		sessionToWs
+			.get(p.sessionCode)
+			?.send(JSON.stringify({ type: "queueUpdate", position: i + 1 }));
+	});
+}
+
+function removeFromQueue(sessionCode: string) {
+	const index = queue.findIndex((p) => p.sessionCode === sessionCode);
+	if (index !== -1) {
+		queue.splice(index, 1);
+		updateQueuePositions();
+		return true;
 	}
+	return false;
+}
+
+function getGameState(room: GameRoom) {
+	return {
+		players: room.players,
+		game: room.game,
+		globalBoard: room.globalBoard,
+		currentBoard: room.currentBoard,
+		currentTurn: room.currentTurn,
+		scores: room.scores,
+		status: room.status,
+		spectators: room.spectators,
+		...(room.winner && { winner: room.winner }),
+	};
+}
+
+function reconnectPlayer(
+	ws: ElysiaWebSocket,
+	room: GameRoom,
+	roomCode: string,
+	sessionCode: string,
+	currentSessionCode: string,
+) {
+	const player = room.players.find((p) => p.sessionCode === sessionCode);
+	if (!player) return false;
+
+	player.connected = true;
+	sessionToWs.delete(currentSessionCode);
+	(ws.data as unknown as WebSocketData).sessionCode = sessionCode;
+	sessionToWs.set(sessionCode, ws);
+	(ws.data as unknown as WebSocketData).roomCode = roomCode;
+	subscribeToRoom(roomCode, sessionCode);
+
+	ws.send(JSON.stringify({ type: "reconnected", ...getGameState(room) }));
+	broadcast(roomCode, { type: "playerReconnected", sessionCode });
+	return true;
 }
 
 function subscribeToRoom(roomCode: string, sessionCode: string) {
@@ -162,14 +207,7 @@ const app = new Elysia()
 					const { playerName } = data;
 					if (!playerName) return;
 
-					if (wsData.inQueue) {
-						const index = queue.findIndex(
-							(p) => p.sessionCode === currentSessionCode,
-						);
-						if (index !== -1) {
-							queue.splice(index, 1);
-						}
-					}
+					if (wsData.inQueue) removeFromQueue(currentSessionCode);
 
 					wsData.inQueue = true;
 					if (queue.length >= MAX_QUEUE_SIZE) {
@@ -182,21 +220,12 @@ const app = new Elysia()
 					ws.send(
 						JSON.stringify({ type: "joinedQueue", position: queue.length }),
 					);
-
-					for (let i = 0; i < queue.length; i++) {
-						const qWs = sessionToWs.get(queue[i].sessionCode);
-						if (qWs) {
-							qWs.send(
-								JSON.stringify({ type: "queueUpdate", position: i + 1 }),
-							);
-						}
-					}
+					updateQueuePositions();
 
 					if (queue.length >= 2) {
 						const player1 = queue.shift();
 						const player2 = queue.shift();
 						if (!player1 || !player2) break;
-
 						const roomCode = generateRoomCode();
 						const room = createRoom();
 						rooms.set(roomCode, room);
@@ -228,51 +257,17 @@ const app = new Elysia()
 
 						room.currentTurn = room.players[0].sessionCode;
 						room.status = "playing";
-
-						broadcast(roomCode, {
-							type: "gameStart",
-							players: room.players,
-							game: room.game,
-							globalBoard: room.globalBoard,
-							currentBoard: room.currentBoard,
-							currentTurn: room.currentTurn,
-							scores: room.scores,
-							status: room.status,
-							spectators: room.spectators,
-						});
-
-						for (let i = 0; i < queue.length; i++) {
-							const qWs = sessionToWs.get(queue[i].sessionCode);
-							if (qWs) {
-								qWs.send(
-									JSON.stringify({ type: "queueUpdate", position: i + 1 }),
-								);
-							}
-						}
+						broadcast(roomCode, { type: "gameStart", ...getGameState(room) });
+						updateQueuePositions();
 					}
 					break;
 				}
 
 				case "leaveQueue": {
-					if (wsData.inQueue) {
-						const index = queue.findIndex(
-							(p) => p.sessionCode === currentSessionCode,
-						);
-						if (index !== -1) {
-							queue.splice(index, 1);
-							ws.send(JSON.stringify({ type: "leftQueue" }));
-
-							for (let i = 0; i < queue.length; i++) {
-								const qWs = sessionToWs.get(queue[i].sessionCode);
-								if (qWs) {
-									qWs.send(
-										JSON.stringify({ type: "queueUpdate", position: i + 1 }),
-									);
-								}
-							}
-						}
-						wsData.inQueue = false;
+					if (wsData.inQueue && removeFromQueue(currentSessionCode)) {
+						ws.send(JSON.stringify({ type: "leftQueue" }));
 					}
+					wsData.inQueue = false;
 					break;
 				}
 
@@ -286,13 +281,8 @@ const app = new Elysia()
 					if (!roomCode || !playerName) return;
 
 					if (wsData.inQueue) {
-						const index = queue.findIndex(
-							(p) => p.sessionCode === currentSessionCode,
-						);
-						if (index !== -1) {
-							queue.splice(index, 1);
-							ws.send(JSON.stringify({ type: "leftQueue" }));
-						}
+						removeFromQueue(currentSessionCode);
+						ws.send(JSON.stringify({ type: "leftQueue" }));
 						wsData.inQueue = false;
 					}
 
@@ -306,49 +296,24 @@ const app = new Elysia()
 						providedSessionCode &&
 						room.players.some((p) => p.sessionCode === providedSessionCode)
 					) {
-						const player = room.players.find(
-							(p) => p.sessionCode === providedSessionCode,
-						);
-						if (player) {
-							player.connected = true;
-							sessionToWs.delete(currentSessionCode);
-							wsData.sessionCode = providedSessionCode;
-							sessionToWs.set(
-								providedSessionCode,
+						if (
+							reconnectPlayer(
 								ws as unknown as ElysiaWebSocket,
-							);
-							wsData.roomCode = roomCode;
-							subscribeToRoom(roomCode, providedSessionCode);
-
-							ws.send(
-								JSON.stringify({
-									type: "reconnected",
-									players: room.players,
-									game: room.game,
-									globalBoard: room.globalBoard,
-									currentBoard: room.currentBoard,
-									currentTurn: room.currentTurn,
-									scores: room.scores,
-									winner: room.winner,
-									status: room.status,
-									spectators: room.spectators,
-								}),
-							);
-
-							broadcast(roomCode, {
-								type: "playerReconnected",
-								sessionCode: providedSessionCode,
-							});
+								room,
+								roomCode,
+								providedSessionCode,
+								currentSessionCode,
+							)
+						) {
 							return;
 						}
 					}
 
 					if (asSpectator || room.players.length >= 2) {
-						const spectator: Spectator = {
+						room.spectators.push({
 							sessionCode: currentSessionCode,
 							name: playerName,
-						};
-						room.spectators.push(spectator);
+						});
 						wsData.roomCode = roomCode;
 						subscribeToRoom(roomCode, currentSessionCode);
 
@@ -356,18 +321,9 @@ const app = new Elysia()
 							JSON.stringify({
 								type: "joinedAsSpectator",
 								sessionCode: currentSessionCode,
-								players: room.players,
-								game: room.game,
-								globalBoard: room.globalBoard,
-								currentBoard: room.currentBoard,
-								currentTurn: room.currentTurn,
-								scores: room.scores,
-								status: room.status,
-								spectators: room.spectators,
-								winner: room.winner,
+								...getGameState(room),
 							}),
 						);
-
 						broadcast(roomCode, {
 							type: "spectatorJoined",
 							name: playerName,
@@ -393,22 +349,9 @@ const app = new Elysia()
 					);
 
 					if (room.players.filter((p) => p.connected).length === 2) {
-						if (room.currentTurn === null) {
-							room.currentTurn = room.players[0].sessionCode;
-						}
+						room.currentTurn ??= room.players[0].sessionCode;
 						room.status = "playing";
-
-						broadcast(roomCode, {
-							type: "gameStart",
-							players: room.players,
-							game: room.game,
-							globalBoard: room.globalBoard,
-							currentBoard: room.currentBoard,
-							currentTurn: room.currentTurn,
-							scores: room.scores,
-							status: room.status,
-							spectators: room.spectators,
-						});
+						broadcast(roomCode, { type: "gameStart", ...getGameState(room) });
 					} else {
 						ws.send(
 							JSON.stringify({
@@ -452,7 +395,7 @@ const app = new Elysia()
 					}
 
 					const currentPlayerIndex = room.players.findIndex(
-						(player) => player.sessionCode === sessionCode,
+						(p) => p.sessionCode === sessionCode,
 					);
 					if (
 						currentPlayerIndex === -1 ||
@@ -477,7 +420,6 @@ const app = new Elysia()
 					}
 
 					const globalWinner = checkWinner(room.globalBoard);
-
 					if (!globalWinner) {
 						room.currentTurn =
 							room.players[(currentPlayerIndex + 1) % 2].sessionCode;
@@ -489,68 +431,49 @@ const app = new Elysia()
 							? null
 							: cellIndex;
 
-					broadcast(roomCode, {
-						type: "updateGame",
+					const gameUpdate = {
+						type: "updateGame" as const,
 						game: room.game,
 						globalBoard: room.globalBoard,
 						currentBoard: room.currentBoard,
 						currentTurn: room.currentTurn,
 						scores: room.scores,
 						spectators: room.spectators,
-					});
+					};
 
 					if (globalWinner) {
 						updateScores(room, globalWinner, sessionCode);
 						room.winner = sessionCode;
-
 						broadcast(roomCode, {
 							type: "gameOver",
 							winner: sessionCode,
 							scores: room.scores,
 						});
-
-						broadcast(roomCode, {
-							type: "updateGame",
-							game: room.game,
-							globalBoard: room.globalBoard,
-							currentBoard: room.currentBoard,
-							currentTurn: room.currentTurn,
-							scores: room.scores,
-							winner: sessionCode,
-							spectators: room.spectators,
-						});
+						broadcast(roomCode, { ...gameUpdate, winner: sessionCode });
+					} else {
+						broadcast(roomCode, gameUpdate);
 					}
 					break;
 				}
 
 				case "requestGameReset": {
 					const { roomCode } = data;
-					if (!roomCode) return;
-
+					if (!roomCode) break;
 					const room = rooms.get(roomCode);
 					if (room && room.winner !== null) {
-						room.game = Array(9)
-							.fill(null)
-							.map(() => Array(9).fill(null));
+						room.game = Array.from({ length: 9 }, () => Array(9).fill(null));
 						room.globalBoard = Array(9).fill(null);
 						room.currentBoard = null;
 						room.currentTurn = room.players[0].sessionCode;
 						room.winner = null;
-						const connectedPlayers = room.players.filter(
-							(p) => p.connected,
-						).length;
-						room.status = connectedPlayers === 2 ? "playing" : "waiting";
-
+						room.status =
+							room.players.filter((p) => p.connected).length === 2
+								? "playing"
+								: "waiting";
 						broadcast(roomCode, {
 							type: "gameReset",
-							game: room.game,
-							globalBoard: room.globalBoard,
-							currentBoard: room.currentBoard,
-							currentTurn: room.currentTurn,
-							scores: room.scores,
+							...getGameState(room),
 							winner: null,
-							status: room.status,
-							spectators: room.spectators,
 						});
 					}
 					break;
@@ -558,36 +481,16 @@ const app = new Elysia()
 
 				case "reconnect": {
 					const { roomCode, sessionCode } = data;
-					if (!roomCode || !sessionCode) return;
-
+					if (!roomCode || !sessionCode) break;
 					const room = rooms.get(roomCode);
 					if (room) {
-						const player = room.players.find(
-							(p) => p.sessionCode === sessionCode,
+						reconnectPlayer(
+							ws as unknown as ElysiaWebSocket,
+							room,
+							roomCode,
+							sessionCode,
+							currentSessionCode,
 						);
-						if (player) {
-							player.connected = true;
-							sessionToWs.delete(currentSessionCode);
-							wsData.sessionCode = sessionCode;
-							sessionToWs.set(sessionCode, ws as unknown as ElysiaWebSocket);
-							wsData.roomCode = roomCode;
-							subscribeToRoom(roomCode, sessionCode);
-
-							ws.send(
-								JSON.stringify({
-									type: "reconnected",
-									players: room.players,
-									game: room.game,
-									globalBoard: room.globalBoard,
-									currentBoard: room.currentBoard,
-									currentTurn: room.currentTurn,
-									scores: room.scores,
-									winner: room.winner,
-									status: room.status,
-									spectators: room.spectators,
-								}),
-							);
-						}
 					}
 					break;
 				}
@@ -595,53 +498,36 @@ const app = new Elysia()
 		},
 		close(ws) {
 			const wsData = ws.data as unknown as WebSocketData;
-			const sessionCode = wsData.sessionCode;
-			const roomCode = wsData.roomCode;
+			const { sessionCode, roomCode } = wsData;
 
 			if (wsData.inQueue) {
-				const index = queue.findIndex((p) => p.sessionCode === sessionCode);
-				if (index !== -1) {
-					queue.splice(index, 1);
-					for (let i = 0; i < queue.length; i++) {
-						const qWs = sessionToWs.get(queue[i].sessionCode);
-						if (qWs) {
-							qWs.send(
-								JSON.stringify({ type: "queueUpdate", position: i + 1 }),
-							);
-						}
-					}
-				}
+				removeFromQueue(sessionCode);
 			}
 
 			if (roomCode) {
 				const room = rooms.get(roomCode);
 				if (room) {
-					const disconnectedPlayer = room.players.find(
+					const player = room.players.find(
 						(p) => p.sessionCode === sessionCode,
 					);
-					const disconnectedSpectator = room.spectators.find(
+					const spectator = room.spectators.find(
 						(s) => s.sessionCode === sessionCode,
 					);
 
-					if (disconnectedPlayer) {
-						disconnectedPlayer.connected = false;
-						broadcast(roomCode, {
-							type: "playerDisconnected",
-							sessionCode,
-						});
-
+					if (player) {
+						player.connected = false;
+						broadcast(roomCode, { type: "playerDisconnected", sessionCode });
 						setTimeout(() => {
-							if (!disconnectedPlayer.connected) {
+							if (!player.connected) {
 								room.players = room.players.filter((p) => p.connected);
 								unsubscribeFromRoom(roomCode, sessionCode);
 								if (room.players.length === 0 && room.spectators.length === 0) {
 									rooms.delete(roomCode);
 									roomSubscribers.delete(roomCode);
-									console.log("Room deleted:", roomCode);
 								}
 							}
 						}, 60000);
-					} else if (disconnectedSpectator) {
+					} else if (spectator) {
 						room.spectators = room.spectators.filter(
 							(s) => s.sessionCode !== sessionCode,
 						);
