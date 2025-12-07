@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/solid-router";
 import { LogOut } from "lucide-solid";
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Motion } from "solid-motionone";
+import { toast } from "solid-sonner";
 import { Scoreboard } from "@/components/game/scoreboard";
 import UltimateBoard from "@/components/game/ultimate-board";
 import { WinnerAnimation } from "@/components/game/winning-animation";
@@ -156,7 +157,7 @@ export default function GameComponent(props: GameComponentProps) {
 
 			case "roomFull":
 				if (!sessionStorage.getItem(`sessionCode_${props.roomCode}`)) {
-					alert("Room is full. You can join as a spectator.");
+					toast.error("Room is full. You can join as a spectator.");
 					ws?.send({
 						type: "joinRoom",
 						roomCode: props.roomCode,
@@ -284,7 +285,7 @@ export default function GameComponent(props: GameComponentProps) {
 								<Input
 									id="playerName"
 									type="text"
-									value={playerName()}
+									prop:value={playerName()}
 									onInput={(e) => setPlayerName(e.currentTarget.value)}
 									placeholder="Enter name"
 									class="w-full rounded-md border-border/60 bg-input px-4 py-2 text-lg transition-colors focus-visible:ring-2 focus-visible:ring-[#e07a5f]/50"

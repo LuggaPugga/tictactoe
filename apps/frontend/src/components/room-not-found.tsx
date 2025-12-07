@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/solid-router";
 import { House, Loader, Wifi } from "lucide-solid";
 import { createSignal, Show } from "solid-js";
+import { toast } from "solid-sonner";
 import { Button } from "@/components/ui/button";
 import { createRoom } from "@/lib/ws-client";
 
@@ -14,7 +15,7 @@ export function RoomNotFound() {
 		if (roomCode) {
 			navigate({ to: `/game/${roomCode}` });
 		} else {
-			alert("Failed to create room");
+			toast.error("Failed to create room");
 		}
 		setIsLoading(false);
 	};

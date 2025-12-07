@@ -9,15 +9,20 @@ export type WsSubscription = Awaited<
 	ReturnType<(typeof client)["game"]["subscribe"]>
 >;
 
-export async function connectWs(): Promise<WsSubscription> {
+export type QueueMessage =
+	| { type: "connected"; sessionCode: string }
+	| { type: "joinedQueue"; position: number }
+	| { type: "queueUpdate"; position: number }
+	| { type: "queueFull" }
+	| { type: "alreadyInQueueOrGame" }
+	| { type: "leftQueue" }
+	| { type: "lobbyCreated"; roomCode: string; sessionCode: string };
+
+export function connectWs(): WsSubscription {
 	return client.game.subscribe();
 }
 
 export async function createRoom(): Promise<string | null> {
-	try {
-		const response = await client.api["create-room"].post();
-		return response?.data?.roomCode ?? null;
-	} catch {
-		return null;
-	}
+	const response = await client.api["create-room"].post().catch(() => null);
+	return response?.data?.roomCode ?? null;
 }

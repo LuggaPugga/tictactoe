@@ -1,7 +1,9 @@
+import { makePersisted } from "@solid-primitives/storage";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { Loader, BotIcon as Robot, Users, Wifi, X } from "lucide-solid";
-import { createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createMemo, createSignal, onCleanup, Show } from "solid-js";
 import { Motion, Presence } from "solid-motionone";
+import { toast } from "solid-sonner";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +20,12 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { connectWs, createRoom, type WsSubscription } from "@/lib/ws-client";
+import {
+	connectWs,
+	createRoom,
+	type QueueMessage,
+	type WsSubscription,
+} from "@/lib/ws-client";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -29,27 +36,12 @@ function Home() {
 	const [inQueue, setInQueue] = createSignal(false);
 	const [queuePosition, setQueuePosition] = createSignal(0);
 	const [activeTab, setActiveTab] = createSignal<"global" | "local">("global");
-	const [name, setName] = createSignal("");
+	const [name, setName] = makePersisted(createSignal(""), {
+		name: "playerName",
+	});
 
 	const navigate = useNavigate();
 	let ws: WsSubscription | null = null;
-	let pendingName = "";
-
-	onMount(() => {
-		const stored = localStorage.getItem("playerName");
-		if (stored) {
-			try {
-				setName(JSON.parse(stored));
-			} catch {
-				setName(stored);
-			}
-		}
-	});
-
-	const setPlayerName = (value: string) => {
-		setName(value);
-		localStorage.setItem("playerName", JSON.stringify(value));
-	};
 
 	const cleanupWs = () => {
 		ws?.close();
@@ -58,68 +50,63 @@ function Home() {
 
 	onCleanup(cleanupWs);
 
-	const handleQueueJoin = async () => {
+	const resetQueueState = () => {
+		setInQueue(false);
+		setQueuePosition(0);
+		setIsLoading(false);
+	};
+
+	const handleQueueMessage = (msg: QueueMessage) => {
+		switch (msg.type) {
+			case "connected":
+				ws?.send({ type: "joinQueue", playerName: name() });
+				break;
+			case "joinedQueue":
+				setInQueue(true);
+				setQueuePosition(msg.position);
+				setIsLoading(false);
+				break;
+			case "queueUpdate":
+				setQueuePosition(msg.position);
+				break;
+			case "queueFull":
+				resetQueueState();
+				cleanupWs();
+				toast.error("The queue is currently full. Please try again later.");
+				break;
+			case "alreadyInQueueOrGame":
+				resetQueueState();
+				cleanupWs();
+				toast.error("You are already in a queue or game.");
+				break;
+			case "leftQueue":
+				resetQueueState();
+				break;
+			case "lobbyCreated":
+				sessionStorage.setItem(`playerName_${msg.roomCode}`, name());
+				sessionStorage.setItem(`sessionCode_${msg.roomCode}`, msg.sessionCode);
+				cleanupWs();
+				navigate({ to: `/game/${msg.roomCode}` });
+				break;
+		}
+	};
+
+	const handleQueueJoin = () => {
 		const playerName = name().trim();
 		if (!playerName) return;
 
-		pendingName = playerName;
 		setIsLoading(true);
 
 		try {
-			ws = await connectWs();
-			ws.subscribe((msg) => {
-				const data =
-					typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
-				console.log("WS message:", data);
-
-				switch (data.type) {
-					case "connected":
-						console.log("Connected, sending joinQueue with name:", pendingName);
-						ws?.send({ type: "joinQueue", playerName: pendingName });
-						break;
-					case "joinedQueue":
-						console.log("Joined queue at position:", data.position);
-						setInQueue(true);
-						setQueuePosition(data.position);
-						setIsLoading(false);
-						break;
-					case "queueUpdate":
-						setQueuePosition(data.position);
-						break;
-					case "queueFull":
-						setInQueue(false);
-						setIsLoading(false);
-						cleanupWs();
-						alert("The queue is currently full. Please try again later.");
-						break;
-					case "alreadyInQueueOrGame":
-						setInQueue(false);
-						setIsLoading(false);
-						cleanupWs();
-						alert("You are already in a queue or game.");
-						break;
-					case "leftQueue":
-						setInQueue(false);
-						setQueuePosition(0);
-						setIsLoading(false);
-						break;
-					case "lobbyCreated":
-						console.log("Lobby created:", data.roomCode);
-						sessionStorage.setItem(`playerName_${data.roomCode}`, pendingName);
-						sessionStorage.setItem(
-							`sessionCode_${data.roomCode}`,
-							data.sessionCode,
-						);
-						cleanupWs();
-						navigate({ to: `/game/${data.roomCode}` });
-						break;
-				}
+			ws = connectWs();
+			ws.subscribe((event) => {
+				const data: QueueMessage =
+					typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+				handleQueueMessage(data);
 			});
-		} catch (e) {
-			console.error("WS connection failed:", e);
-			setInQueue(false);
-			setIsLoading(false);
-			alert("Failed to connect. Please try again.");
+		} catch {
+			resetQueueState();
+			toast.error("Failed to connect. Please try again.");
 		}
 	};
 
@@ -129,42 +116,42 @@ function Home() {
 		ws.send({ type: "leaveQueue" });
 	};
 
-	const handleCreateRoom = async () => {
+	const handleCreateRoom = () => {
 		const playerName = name().trim();
 		if (!playerName) return;
 
 		setIsLoading(true);
-		try {
-			const code = await createRoom();
-			if (code) {
-				sessionStorage.setItem(`playerName_${code}`, playerName);
-				navigate({ to: `/game/${code}` });
-			} else {
-				alert("Failed to create room. Please try again.");
-			}
-		} catch {
-			alert("Failed to create room. Please try again.");
-		} finally {
-			setIsLoading(false);
-		}
+		createRoom()
+			.then((code) => {
+				if (code) {
+					sessionStorage.setItem(`playerName_${code}`, playerName);
+					navigate({ to: `/game/${code}` });
+				} else {
+					toast.error("Failed to create room. Please try again.");
+				}
+			})
+			.catch(() => {
+				toast.error("Failed to create room. Please try again.");
+			})
+			.finally(() => {
+				setIsLoading(false);
+			});
 	};
 
 	const handleJoinRoom = () => {
 		const playerName = name().trim();
 		const code = roomCode().trim().toUpperCase();
-		if (playerName && code) {
-			sessionStorage.setItem(`playerName_${code}`, playerName);
-			navigate({ to: `/game/${code}` });
-		}
+		if (!playerName || !code) return;
+
+		sessionStorage.setItem(`playerName_${code}`, playerName);
+		navigate({ to: `/game/${code}` });
 	};
 
 	const handleLocalMultiplayer = () => {
-		if (name().trim()) {
-			navigate({ to: "/local-multiplayer" });
-		}
+		name().trim() && navigate({ to: "/local-multiplayer" });
 	};
 
-	const hasName = () => name().trim().length > 0;
+	const hasName = createMemo(() => name().trim().length > 0);
 
 	return (
 		<div class="h-screen w-full flex flex-col items-center justify-center p-4 bg-background text-foreground">
@@ -224,8 +211,8 @@ function Home() {
 								<Input
 									type="text"
 									placeholder="Enter your name"
-									value={name()}
-									onInput={(e) => setPlayerName(e.currentTarget.value)}
+									prop:value={name()}
+									onInput={(e) => setName(e.currentTarget.value)}
 									class="h-11"
 									disabled={inQueue()}
 								/>
@@ -323,8 +310,8 @@ function Home() {
 								<Input
 									type="text"
 									placeholder="Enter your name"
-									value={name()}
-									onInput={(e) => setPlayerName(e.currentTarget.value)}
+									prop:value={name()}
+									onInput={(e) => setName(e.currentTarget.value)}
 									class="h-11"
 									disabled={inQueue()}
 								/>
