@@ -7,6 +7,7 @@ import {
 } from "@tanstack/solid-router";
 import { Suspense } from "solid-js";
 import { HydrationScript } from "solid-js/web";
+import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/lib/theme";
 import styleCss from "../styles.css?url";
 
@@ -66,6 +67,7 @@ function RootComponent() {
 			<body class="min-h-screen bg-background text-foreground antialiased">
 				<ThemeProvider defaultTheme="system">
 					<Suspense>
+						<Toaster />
 						<Outlet />
 					</Suspense>
 				</ThemeProvider>
