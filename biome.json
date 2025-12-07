@@ -17,6 +17,10 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true
+		},
+		"domains": {
+			"react": "none",
+			"solid": "recommended"
 		}
 	},
 	"javascript": {
