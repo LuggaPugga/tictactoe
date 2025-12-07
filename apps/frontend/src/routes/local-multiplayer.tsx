@@ -1,6 +1,6 @@
 import { makePersisted } from "@solid-primitives/storage";
 import { createFileRoute } from "@tanstack/solid-router";
-import { createSignal, onCleanup, Show } from "solid-js";
+import { createSignal, onCleanup, onMount, Show } from "solid-js";
 import { ContinueGameDialog } from "@/components/game/continue-game-dialog";
 import { Scoreboard } from "@/components/game/scoreboard";
 import UltimateBoard from "@/components/game/ultimate-board";
@@ -8,8 +8,7 @@ import { WinnerAnimation } from "@/components/game/winning-animation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWinnerAnimation } from "@/hooks/use-winner-animation";
-import { checkWinner } from "@/lib/game-utils";
-import type { CellValue, Game, LocalBoard, Player, Score } from "@/lib/types";
+import { createLocalGameStore } from "@/lib/local-game-store";
 
 export const Route = createFileRoute("/local-multiplayer")({
 	component: LocalMultiplayer,
@@ -25,33 +24,8 @@ export const Route = createFileRoute("/local-multiplayer")({
 	}),
 });
 
-interface GameState {
-	players: Player[];
-	currentTurn: string | null;
-	game: Game;
-	globalBoard: LocalBoard;
-	currentBoard: number | null;
-	scores: Record<string, Score>;
-	winner: string | null;
-	status: "waiting" | "playing" | "over";
-}
-
-const createInitialGame = (): Game =>
-	Array.from({ length: 9 }, () => Array(9).fill(null));
-
-const createInitialState = (): GameState => ({
-	players: [],
-	currentTurn: null,
-	game: createInitialGame(),
-	globalBoard: Array(9).fill(null),
-	currentBoard: null,
-	scores: {},
-	winner: null,
-	status: "waiting",
-});
-
 function LocalMultiplayer() {
-	const [state, setState] = createSignal<GameState>(createInitialState());
+	const store = createLocalGameStore();
 	const [showContinueDialog, setShowContinueDialog] = createSignal(false);
 	const { showAnimation, triggerAnimation, cleanup } = useWinnerAnimation();
 
@@ -59,20 +33,11 @@ function LocalMultiplayer() {
 		name: "playerName",
 	});
 
-	const [savedGame, setSavedGame] = makePersisted(
-		createSignal<GameState | null>(null),
-		{
-			name: "ticTacToeGame",
-			storage:
-				typeof sessionStorage !== "undefined" ? sessionStorage : undefined,
-		},
-	);
-
-	const saved = savedGame();
-	if (saved && state().status === "waiting") {
-		setState(saved);
-		setShowContinueDialog(true);
-	}
+	onMount(() => {
+		if (store.loadSavedGame()) {
+			setShowContinueDialog(true);
+		}
+	});
 
 	onCleanup(cleanup);
 
@@ -86,143 +51,19 @@ function LocalMultiplayer() {
 		if (!p1 || !p2) return;
 
 		setPlayerName(p1);
-		setState({
-			players: [
-				{ id: "X", name: p1, sessionCode: "player1", connected: true },
-				{ id: "O", name: p2, sessionCode: "player2", connected: true },
-			],
-			currentTurn: "player1",
-			game: createInitialGame(),
-			globalBoard: Array(9).fill(null),
-			currentBoard: null,
-			scores: {
-				player1: { wins: 0, losses: 0, ties: 0 },
-				player2: { wins: 0, losses: 0, ties: 0 },
-			},
-			winner: null,
-			status: "playing",
-		});
+		store.startGame(p1, p2);
 	};
 
 	const handleCellClick = (boardIndex: number, cellIndex: number) => {
-		const current = state();
-		if (current.status !== "playing" || current.winner) return;
-
-		const board = current.game[boardIndex];
-		if (!board || board[cellIndex] !== null) return;
-
-		const isValidBoard =
-			current.currentBoard === null ||
-			current.currentBoard === boardIndex ||
-			current.game[current.currentBoard]?.every((c) => c !== null);
-		if (!isValidBoard) return;
-
-		const currentPlayer = current.players.find(
-			(p) => p.sessionCode === current.currentTurn,
-		);
-		if (!currentPlayer) return;
-
-		const newGame: Game = current.game.map((b, i) =>
-			i === boardIndex
-				? b.map((c, j) =>
-						j === cellIndex ? (currentPlayer.id as CellValue) : c,
-					)
-				: b,
-		);
-
-		const newGlobalBoard: LocalBoard = [...current.globalBoard];
-		const updatedBoard = newGame[boardIndex];
-		if (!updatedBoard) return;
-		const localWinner = checkWinner(updatedBoard);
-		if (localWinner && localWinner !== "tie") {
-			newGlobalBoard[boardIndex] = localWinner;
-		}
-
-		const nextBoard = newGame[cellIndex];
-		const isBoardUnavailable =
-			nextBoard?.every((c) => c !== null) || newGlobalBoard[cellIndex] !== null;
-		const newCurrentBoard = isBoardUnavailable ? null : cellIndex;
-
-		const globalWinner = checkWinner(newGlobalBoard);
-		const otherPlayer =
-			current.currentTurn === "player1" ? "player2" : "player1";
-
-		if (globalWinner) {
-			const newScores = { ...current.scores };
-			const p1Score = newScores.player1 ?? { wins: 0, losses: 0, ties: 0 };
-			const p2Score = newScores.player2 ?? { wins: 0, losses: 0, ties: 0 };
-
-			if (globalWinner === "tie") {
-				newScores.player1 = { ...p1Score, ties: p1Score.ties + 1 };
-				newScores.player2 = { ...p2Score, ties: p2Score.ties + 1 };
-			} else {
-				const winnerCode = currentPlayer.sessionCode;
-				const winnerScore = newScores[winnerCode] ?? {
-					wins: 0,
-					losses: 0,
-					ties: 0,
-				};
-				const loserScore = newScores[otherPlayer] ?? {
-					wins: 0,
-					losses: 0,
-					ties: 0,
-				};
-				newScores[winnerCode] = { ...winnerScore, wins: winnerScore.wins + 1 };
-				newScores[otherPlayer] = {
-					...loserScore,
-					losses: loserScore.losses + 1,
-				};
-			}
-
-			const newState: GameState = {
-				...current,
-				game: newGame,
-				globalBoard: newGlobalBoard,
-				currentBoard: newCurrentBoard,
-				scores: newScores,
-				winner: globalWinner === "tie" ? null : currentPlayer.sessionCode,
-				status: "over",
-			};
-			setState(newState);
-			setSavedGame(newState);
+		if (store.makeMove(boardIndex, cellIndex)) {
 			triggerAnimation();
-		} else {
-			const newState: GameState = {
-				...current,
-				game: newGame,
-				globalBoard: newGlobalBoard,
-				currentBoard: newCurrentBoard,
-				currentTurn: otherPlayer,
-			};
-			setState(newState);
-			setSavedGame(newState);
 		}
-	};
-
-	const handlePlayAgain = () => {
-		setState((prev) => ({
-			...prev,
-			game: createInitialGame(),
-			globalBoard: Array(9).fill(null),
-			currentBoard: null,
-			winner: null,
-			status: "playing",
-			currentTurn: "player1",
-		}));
 	};
 
 	const handleNewGame = () => {
-		setSavedGame(null);
+		store.reset();
 		setShowContinueDialog(false);
-		setState(createInitialState());
 	};
-
-	const current = () => state();
-	const winnerName = () =>
-		current().winner
-			? (current().players.find((p) => p.sessionCode === current().winner)
-					?.name ?? "")
-			: "";
 
 	return (
 		<div class="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-background text-foreground">
@@ -231,7 +72,7 @@ function LocalMultiplayer() {
 			</div>
 
 			<Show
-				when={current().status !== "waiting"}
+				when={store.state.status !== "waiting"}
 				fallback={
 					<div class="w-full max-w-lg space-y-8 relative z-10">
 						<div class="text-center space-y-4">
@@ -286,9 +127,9 @@ function LocalMultiplayer() {
 						<div class="w-full xl:w-3/4 flex justify-center order-2 xl:order-1">
 							<div class="w-full max-w-[80vh] aspect-square">
 								<UltimateBoard
-									game={current().game}
-									globalBoard={current().globalBoard}
-									currentBoard={current().currentBoard}
+									game={store.state.game}
+									globalBoard={store.state.globalBoard}
+									currentBoard={store.state.currentBoard}
 									onCellClick={handleCellClick}
 								/>
 							</div>
@@ -296,11 +137,11 @@ function LocalMultiplayer() {
 						<div class="w-full lg:w-1/4 lg:fixed lg:right-4 lg:top-1/2 lg:-translate-y-1/2 order-1 lg:order-2">
 							<Scoreboard
 								localGame={true}
-								players={current().players}
-								scores={current().scores}
-								currentTurn={current().currentTurn}
-								onPlayAgain={handlePlayAgain}
-								ended={current().status === "over"}
+								players={store.state.players}
+								scores={store.state.scores}
+								currentTurn={store.state.currentTurn}
+								onPlayAgain={store.playAgain}
+								ended={store.state.status === "over"}
 							/>
 						</div>
 					</div>
@@ -314,7 +155,7 @@ function LocalMultiplayer() {
 				onNewGame={handleNewGame}
 			/>
 
-			<WinnerAnimation isVisible={showAnimation()} winner={winnerName()} />
+			<WinnerAnimation isVisible={showAnimation()} winner={store.getWinnerName()} />
 		</div>
 	);
 }
