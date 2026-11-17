@@ -14,7 +14,7 @@
 		"@elysiajs/eden": "^1.4.5",
 		"@fontsource/inter": "^5.2.8",
 		"@kobalte/core": "^0.13.11",
-		"@solid-primitives/storage": "^4.3.3",
+		"@solid-primitives/storage": "^5.0.0",
 		"@tailwindcss/vite": "^4.1.17",
 		"@tanstack/router-plugin": "^1.139.14",
 		"@tanstack/solid-router": "^1.139.14",
